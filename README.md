@@ -376,6 +376,26 @@ the password unmasked.
 
 There is no password-change screen in the admin UI yet; this script is the way.
 
+### When a command cannot connect
+
+`Authentication failed against database server ... for `(not available)`` means
+the connection string is wrong, not that the account is missing. The scripts
+check for the two mistakes that actually happen — a documentation placeholder
+pasted verbatim, and a string whose password was masked before sharing — and
+say which one it is.
+
+To see what is currently set, without revealing the password:
+
+```powershell
+$env:DATABASE_URL -replace ':[^:@]+@', ':***@'
+```
+
+```bash
+echo "$DATABASE_URL" | sed -E 's|:[^:@]+@|:***@|'
+```
+
+That masked form is the one to paste when asking for help.
+
 ### Keeping credentials out of view
 
 A connection string contains the database password. Do not paste one into a

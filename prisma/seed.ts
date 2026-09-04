@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { hashPassword } from '../src/lib/auth';
+import { assertUsableDatabaseUrl } from '../scripts/db-url';
 
 /**
  * Seeds the three courts from the design, the venue defaults, and two staff
@@ -36,6 +37,8 @@ const COURTS = [
 ];
 
 async function main() {
+  assertUsableDatabaseUrl();
+
   await prisma.settings.upsert({ where: { id: 1 }, update: {}, create: { id: 1 } });
 
   // Courts are created only when absent, never updated. Re-seeding is a normal

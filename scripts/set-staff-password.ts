@@ -13,6 +13,7 @@
  */
 import { PrismaClient } from '@prisma/client';
 import { hashPassword } from '../src/lib/auth';
+import { assertUsableDatabaseUrl } from './db-url';
 
 const prisma = new PrismaClient();
 
@@ -90,6 +91,8 @@ function promptHidden(question: string): Promise<string> {
 }
 
 async function main() {
+  assertUsableDatabaseUrl();
+
   const email = process.argv[2]?.trim().toLowerCase();
   if (!email) {
     console.error('Which account? e.g. npm run staff:password -- admin@picklelounge.ph');
