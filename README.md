@@ -163,6 +163,29 @@ actually observes DST to prove the conversion is not accidentally UTC+8.
 
 ---
 
+## Getting a live URL
+
+The app needs a server and a database, so it has to be deployed somewhere.
+Shortest path, about ten minutes:
+
+1. **Database** — create a free project at [neon.tech](https://neon.tech) and
+   copy the connection string.
+2. **Deploy** — at [vercel.com/new](https://vercel.com/new), import this repo
+   and set two environment variables:
+   - `DATABASE_URL` — the Neon string
+   - `APP_SECRET` — `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+
+   Migrations run automatically on deploy (see [`vercel.json`](vercel.json)).
+3. **Seed it once** — from your machine, with `DATABASE_URL` pointed at Neon:
+   ```bash
+   DATABASE_URL="<neon string>" npm run db:seed
+   ```
+   That creates the three courts, the venue defaults and the staff accounts.
+
+You now have a shareable URL. Payments run on the sandbox gateway and passes
+print to the Vercel logs until you add the credentials below — everything else
+is fully working, and every screen says which mode it is in.
+
 ## Going live
 
 ### 1. Database
@@ -204,8 +227,10 @@ payment: it is logged, and the booker can still reach their pass by link.
 
 - Set `APP_SECRET` to 32+ random bytes. Changing it later invalidates every
   staff session and every issued pass.
-- Set `NEXT_PUBLIC_SITE_URL` to your real origin — join links, pass links and
-  the payment redirect URLs are built from it.
+- `NEXT_PUBLIC_SITE_URL` builds join links, pass links and the payment redirect
+  URLs. On Vercel you can leave it unset for the first deploy — the platform's
+  own domain is used automatically — then set it when you point a custom domain
+  at the project.
 - **Delete or change the seeded staff accounts.**
 
 ### 5. Deploy
