@@ -33,6 +33,10 @@ password. This is the same product with those four things actually built.
 - Add, rename and retire courts
 - Schedule maintenance closures per court or venue-wide
 - See upcoming bookings, the last 24 hours of activity, and revenue booked
+- Add and remove staff accounts, change their role, reset a forgotten password
+- Browse everyone who has booked, with their history, contact details and spend
+
+Every signed-in staff member can change their own password at `/account`.
 
 ---
 
@@ -323,6 +327,8 @@ prisma/
 src/
   lib/
     availability.ts          Real availability from real bookings
+    staff.ts                 Staff accounts, and the lock-yourself-out rules
+    customers.ts             The customer directory, aggregated from bookings
     booking.ts               Holds, confirmation, cancellation
     checkout.ts              Booking ↔ payment orchestration, idempotency
     pass.ts                  Pass signing, verification, QR rendering
@@ -353,13 +359,16 @@ used to fix a password.
 
 ### Changing a staff password
 
-macOS / Linux:
+**Normally, in the browser.** Sign in and open **Your account** (`/account`) to
+change your own password — this works for admins and front desk alike, and
+needs your current password. An admin can reset somebody else's from **Admin →
+Staff accounts**, which does not.
+
+**From the command line**, when nobody can sign in at all:
 
 ```bash
 DATABASE_URL="<connection string>" npm run staff:password -- admin@picklelounge.ph
 ```
-
-Windows PowerShell (note `npm.cmd`):
 
 ```powershell
 $env:DATABASE_URL="<connection string>"
@@ -367,14 +376,9 @@ npm.cmd run staff:password -- admin@picklelounge.ph
 ```
 
 It prompts for the new password and masks what you type. Run it with no email
-to list the accounts in the database.
-
-For scripting, set `STAFF_PASSWORD` and it will not prompt — but that puts the
-password in your shell history, so prefer the prompt when typing by hand. With
-no interactive terminal and no `STAFF_PASSWORD`, it stops rather than reading
-the password unmasked.
-
-There is no password-change screen in the admin UI yet; this script is the way.
+to list the accounts. For scripting, set `STAFF_PASSWORD` and it will not
+prompt — but that puts the password in your shell history. With no interactive
+terminal and no `STAFF_PASSWORD` it stops, rather than reading it unmasked.
 
 ### Is the deployment actually working?
 
@@ -433,8 +437,9 @@ working immediately.
   hours before, and the setting exists and is displayed, but the customer-facing
   cancel flow and the provider refund call are not implemented. `cancelBooking()`
   and a `refund()` method on the gateway are in place to build on.
-- **A staff-management screen.** Accounts are created by the seed and their
-  passwords changed with `npm run staff:password`; there is no UI for adding,
-  removing or editing staff.
+- **Customer accounts.** Booking is guest checkout — a customer supplies a name,
+  email and mobile per booking and never signs in. The admin Customers section
+  is a read-only directory built from bookings, so two bookings made with
+  different email addresses are two customers, and nothing links them.
 - **Add-ons at the desk.** Listed on the rates section as the design has them,
   but charged manually — they are not part of the booking total.

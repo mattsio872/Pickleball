@@ -24,9 +24,9 @@ export function StaffBar({
         <nav className="site-nav" style={{ gap: 16 }}>
           <Link href="/desk">Front desk</Link>
           {role === 'ADMIN' && <Link href="/admin">Admin</Link>}
-          <span className="muted" style={{ fontSize: 13 }}>
+          <Link href="/account" style={{ fontSize: 13 }}>
             {staffName}
-          </span>
+          </Link>
           <button
             className="btn btn-secondary"
             onClick={async () => {

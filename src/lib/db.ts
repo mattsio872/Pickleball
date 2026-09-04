@@ -27,6 +27,8 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
  */
 export const PG_EXCLUSION_VIOLATION = '23P01';
 export const PG_UNIQUE_VIOLATION = '23505';
+/** Prisma's own code for a unique constraint it models. */
+export const PRISMA_UNIQUE_VIOLATION = 'P2002';
 
 /**
  * Reads the underlying Postgres SQLSTATE from a Prisma error.
@@ -56,4 +58,17 @@ export function pgErrorCode(error: unknown): string | undefined {
     if (match) return match[1];
   }
   return typeof code === 'string' ? code : undefined;
+}
+
+/**
+ * Whether an error is a unique-constraint violation.
+ *
+ * Prisma reports a constraint it models with its own code (P2002) and never
+ * surfaces the Postgres SQLSTATE, so comparing against 23505 alone silently
+ * never matches — the caller falls through to a 500 instead of "that email
+ * already has an account". Both codes mean the same thing here.
+ */
+export function isUniqueViolation(error: unknown): boolean {
+  const code = pgErrorCode(error);
+  return code === PG_UNIQUE_VIOLATION || code === PRISMA_UNIQUE_VIOLATION;
 }

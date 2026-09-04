@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAdmin } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { PG_UNIQUE_VIOLATION, pgErrorCode } from '@/lib/db';
+import { isUniqueViolation } from '@/lib/db';
 import { route } from '@/lib/api';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 
@@ -26,7 +26,7 @@ export const POST = route(async (request: NextRequest) => {
     });
     return NextResponse.json(court, { status: 201 });
   } catch (error) {
-    if (pgErrorCode(error) === PG_UNIQUE_VIOLATION) {
+    if (isUniqueViolation(error)) {
       throw new ValidationError(`Court ${input.code.toUpperCase()} already exists.`);
     }
     throw error;

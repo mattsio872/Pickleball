@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { Prisma, type Booking, type Court } from '@prisma/client';
-import { PG_EXCLUSION_VIOLATION, PG_UNIQUE_VIOLATION, pgErrorCode, prisma } from './db';
+import { PG_EXCLUSION_VIOLATION, isUniqueViolation, pgErrorCode, prisma } from './db';
 import { getSettings } from './settings';
 import { priceFor } from './money';
 import { addMinutes, venueInstant } from './time';
@@ -101,7 +101,7 @@ export async function createHold(input: CreateHoldInput, now: Date = new Date())
         // Someone else's insert landed between our check and ours.
         throw new SlotTakenError();
       }
-      if (code === PG_UNIQUE_VIOLATION && attempt < 4) continue;
+      if (isUniqueViolation(error) && attempt < 4) continue;
       throw error;
     }
   }

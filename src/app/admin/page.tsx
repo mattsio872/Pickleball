@@ -9,6 +9,9 @@ import { methodLabel } from '@/lib/payments';
 import { paymentsLive, emailLive } from '@/lib/env';
 import { StaffBar } from '@/components/StaffBar';
 import { SettingsPanel, CourtsPanel, ClosuresPanel } from './AdminPanels';
+import { StaffPanel } from './StaffPanel';
+import { CustomersPanel } from './CustomersPanel';
+import { listCustomers } from '@/lib/customers';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,7 +36,7 @@ export default async function AdminPage() {
   const now = new Date();
   const startOfToday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-  const [courts, upcoming, recent, closureRows, revenue, confirmedCount] = await Promise.all([
+  const [courts, upcoming, recent, closureRows, revenue, confirmedCount, staffRows, customerList] = await Promise.all([
     prisma.court.findMany({ orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }] }),
     prisma.booking.findMany({
       where: { status: 'CONFIRMED', endsAt: { gt: now } },
@@ -50,7 +53,18 @@ export default async function AdminPage() {
     prisma.closure.findMany({ where: { endsAt: { gt: now } }, include: { court: true }, orderBy: { startsAt: 'asc' } }),
     prisma.booking.aggregate({ where: { status: 'CONFIRMED' }, _sum: { totalCents: true } }),
     prisma.booking.count({ where: { status: 'CONFIRMED' } }),
+    prisma.staffUser.findMany({
+      orderBy: [{ role: 'asc' }, { email: 'asc' }],
+      select: { id: true, email: true, name: true, role: true, lastLoginAt: true, createdAt: true },
+    }),
+    listCustomers({ limit: 200 }),
   ]);
+
+  const staff = staffRows.map((s) => ({
+    ...s,
+    lastLoginAt: s.lastLoginAt?.toISOString() ?? null,
+    createdAt: s.createdAt.toISOString(),
+  }));
 
   const closures = closureRows.map((c) => ({
     id: c.id,
@@ -207,6 +221,18 @@ export default async function AdminPage() {
         {section('Closures', 'Maintenance windows and holidays. Slots inside a closure stop being offered.', (
           <ClosuresPanel courts={courtsPlain} closures={closures} />
         ))}
+
+        {section(
+          'Staff accounts',
+          'Who can reach the front desk and this dashboard. Everyone can change their own password under Your account.',
+          <StaffPanel initial={staff} currentUserId={session.userId} />,
+        )}
+
+        {section(
+          'Customers',
+          'Everyone who has booked, grouped by the email they booked with. Read-only — customers do not have logins.',
+          <CustomersPanel initial={customerList.customers} initialTotal={customerList.total} />,
+        )}
       </main>
     </>
   );
