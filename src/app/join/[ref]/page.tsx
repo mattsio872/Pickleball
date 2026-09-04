@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { findByRefWithParty } from '@/lib/booking';
 import { getSettings } from '@/lib/settings';
+import { currentCustomer } from '@/lib/customer-auth';
 import { dateLabel, dayKeyOf, minutesIntoDayOf, timeLabel } from '@/lib/time';
 import { SiteHeader } from '@/components/SiteHeader';
 import { JoinForm } from './JoinForm';
@@ -19,6 +20,7 @@ export default async function JoinPage({ params }: { params: Promise<{ ref: stri
   if (!booking) notFound();
 
   const settings = await getSettings();
+  const customer = await currentCustomer();
   const timezone = settings.timezone;
   const day = dateLabel(dayKeyOf(booking.startsAt, timezone), timezone);
   const time = `${timeLabel(minutesIntoDayOf(booking.startsAt, timezone))} – ${timeLabel(minutesIntoDayOf(booking.endsAt, timezone))}`;
@@ -27,7 +29,7 @@ export default async function JoinPage({ params }: { params: Promise<{ ref: stri
 
   return (
     <>
-      <SiteHeader venueName={settings.venueName} city={settings.city} showNav={false} />
+      <SiteHeader venueName={settings.venueName} city={settings.city} showNav={false} customerName={customer?.name} />
 
       <main className="container fade-in" style={{ padding: '32px 24px 64px', maxWidth: 720 }}>
         <div className="eyebrow" style={{ marginBottom: 14 }}>
@@ -45,7 +47,7 @@ export default async function JoinPage({ params }: { params: Promise<{ ref: stri
           {[
             ['Court', `Court ${booking.court.code} · ${booking.court.name}`],
             ['When', `${day}, ${time}`],
-            ['Party', `${booking.players.length} of ${settings.maxPlayers} registered`],
+            ['Party', `${booking.players.length} registered so far`],
           ].map(([label, value], i, all) => (
             <div
               key={label}
@@ -77,7 +79,7 @@ export default async function JoinPage({ params }: { params: Promise<{ ref: stri
                 </div>
               ))}
             </div>
-            <JoinForm bookingRef={booking.ref} full={booking.players.length >= settings.maxPlayers} />
+            <JoinForm bookingRef={booking.ref} />
           </>
         )}
       </main>

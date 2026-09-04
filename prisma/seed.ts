@@ -18,6 +18,7 @@ const COURTS = [
     name: 'Center',
     blurb: 'Cushioned acrylic, tournament lighting and the only court with spectator seating.',
     meta: 'Indoor · 4m clearance · seats 20',
+    imageUrl: '',
     sortOrder: 0,
   },
   {
@@ -25,6 +26,7 @@ const COURTS = [
     name: 'North',
     blurb: 'Quietest of the three, tucked behind the lounge wall. Popular for coaching.',
     meta: 'Indoor · 4m clearance',
+    imageUrl: '',
     sortOrder: 1,
   },
   {
@@ -32,6 +34,7 @@ const COURTS = [
     name: 'Lanai',
     blurb: 'Covered open-air court with cross ventilation. Cooler in the early mornings.',
     meta: 'Covered outdoor · roofed',
+    imageUrl: '',
     sortOrder: 2,
   },
 ];

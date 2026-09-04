@@ -14,6 +14,12 @@ const create = z.object({
   name: z.string().trim().min(1).max(60),
   blurb: z.string().trim().max(300),
   meta: z.string().trim().max(120),
+  imageUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .refine((v) => v === '' || /^https?:\/\//i.test(v), 'Give a full image URL, or leave it blank.')
+    .optional(),
   sortOrder: z.number().int().min(0).max(99).optional(),
 });
 

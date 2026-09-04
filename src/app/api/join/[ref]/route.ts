@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { findByRefWithParty } from '@/lib/booking';
-import { getSettings } from '@/lib/settings';
 import { route } from '@/lib/api';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 
@@ -27,11 +26,8 @@ export const POST = route(async (request: NextRequest, context: { params: Promis
     throw new ValidationError('That booking has already finished.');
   }
 
-  const settings = await getSettings();
-  if (booking.players.length >= settings.maxPlayers) {
-    throw new ValidationError(`This party is full (${settings.maxPlayers} players).`);
-  }
-
+  // No cap on the roster: a booker invites whoever they like, and the desk
+  // sees everyone who signed up.
   const name = input.name.trim();
   if (booking.players.some((p) => p.name.toLowerCase() === name.toLowerCase())) {
     throw new ValidationError('Somebody with that name is already on this roster.');

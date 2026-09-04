@@ -4,21 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, ApiRequestError } from '@/lib/client';
 
-export function JoinForm({ bookingRef, full }: { bookingRef: string; full: boolean }) {
+export function JoinForm({ bookingRef }: { bookingRef: string }) {
   const router = useRouter();
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
-
-  if (full) {
-    return (
-      <div className="banner banner-warn">
-        This party is already full. Ask the booker to have you added at the front desk instead.
-      </div>
-    );
-  }
 
   if (done) {
     return (

@@ -18,7 +18,9 @@ password. This is the same product with those four things actually built.
 - Browse live availability across every court, by date and block length
 - Hold a slot, pay by GCash, Maya, online bank transfer or card
 - Receive a signed QR entry pass by email
-- Share a join link so each player registers themselves onto the party roster
+- Share a join link so each player registers themselves — no limit on the party
+- Optionally keep an account: saved details filled in at booking, and every
+  booking in one place at `/my`. Booking as a guest still works.
 
 **For the front desk**
 
@@ -35,6 +37,9 @@ password. This is the same product with those four things actually built.
 - See upcoming bookings, the last 24 hours of activity, and revenue booked
 - Add and remove staff accounts, change their role, reset a forgotten password
 - Browse everyone who has booked, with their history, contact details and spend
+- See the whole week as a grid at `/admin/schedule` — every court, every hour
+- Paste a photo URL per court and for the hero; the generated artwork shows
+  wherever one is blank
 
 Every signed-in staff member can change their own password at `/account`.
 
@@ -329,6 +334,8 @@ src/
     availability.ts          Real availability from real bookings
     staff.ts                 Staff accounts, and the lock-yourself-out rules
     customers.ts             The customer directory, aggregated from bookings
+    customer-auth.ts         Customer accounts, sessions and booking claims
+    schedule.ts              The weekly grid, built from the same bookings
     booking.ts               Holds, confirmation, cancellation
     checkout.ts              Booking ↔ payment orchestration, idempotency
     pass.ts                  Pass signing, verification, QR rendering
@@ -341,8 +348,11 @@ src/
     book/                    Booking wizard
     pass/[token]/            The booker's pass
     join/[ref]/              Player self-registration
+    signin/ register/        Customer sign-in and registration
+    my/                      A customer's bookings and saved details
     desk/                    Staff scanner (camera + reference lookup)
     admin/                   Owner dashboard
+    admin/schedule/          The week as a grid
     api/                     Route handlers
 tests/                       87 tests, integration ones against real Postgres
 ```
@@ -431,15 +441,48 @@ password in the Neon console (**Roles → Reset password**), then update
 `DATABASE_URL` and `DIRECT_URL` in Vercel and redeploy. The old string stops
 working immediately.
 
+## Customer accounts
+
+Booking is possible with or without an account; an account adds saved details
+and a record of what has been booked. It is not a gate in front of the court.
+
+Two decisions worth knowing about:
+
+- **A customer session is not a staff session.** Different cookie, and the token
+  carries an audience claim, so a staff token cannot be read as a customer one.
+- **Registering does not adopt guest bookings that share the email address.**
+  The address is unverified at that point, so adopting them would let anyone
+  read a stranger's history by signing up as them. A past booking is attached
+  one at a time, using its reference — which was emailed to the booker, printed
+  on their pass, and is not guessable.
+
+## Court and hero photographs
+
+There is no image upload. Each court has an `imageUrl`, and the venue has a
+`heroImageUrl`, both editable in **Admin → Courts / Venue settings**. Paste any
+public image URL — a CDN, an object store, wherever the venue keeps its
+photographs — and it appears immediately. Leave one blank and the design's
+generated artwork shows instead, so the site never has a broken image or an
+empty grey box.
+
+Plain `<img>` rather than `next/image`, deliberately: the URLs are entered by an
+admin and could point anywhere, and `next/image` refuses a host that is not in
+the build configuration. A wrong URL should be a wrong picture, not a 500.
+
 ## Deliberately not built
 
 - **Cancellation and refunds.** The FAQ promises free cancellation up to 12
   hours before, and the setting exists and is displayed, but the customer-facing
   cancel flow and the provider refund call are not implemented. `cancelBooking()`
   and a `refund()` method on the gateway are in place to build on.
-- **Customer accounts.** Booking is guest checkout — a customer supplies a name,
-  email and mobile per booking and never signs in. The admin Customers section
-  is a read-only directory built from bookings, so two bookings made with
-  different email addresses are two customers, and nothing links them.
+- **Cancellation and refunds.** The venue does not offer them. Nothing in the
+  application sets a booking to CANCELLED; the enum value is retained only so
+  historical rows still read. Refunding is a manual act in the PayMongo
+  dashboard.
+- **Email verification for customer accounts.** An address is not proved, which
+  is why claiming a past booking asks for its reference instead of trusting the
+  address. `Booking.customerId` is the link; `customerEmail` is only what was
+  typed at the time.
+- **Image upload.** Photographs are referenced by URL, not stored by the app.
 - **Add-ons at the desk.** Listed on the rates section as the design has them,
   but charged manually — they are not part of the booking total.

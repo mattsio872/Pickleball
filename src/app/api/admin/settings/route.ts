@@ -15,10 +15,17 @@ const body = z.object({
   hourlyRateCents: z.number().int().min(0).max(100_000_00),
   openHour: z.number().int().min(0).max(23),
   closeHour: z.number().int().min(1).max(24),
-  durationsMinutes: z.array(z.number().int().min(30).max(480)).min(1).max(8),
-  maxPlayers: z.number().int().min(1).max(20),
+  // Whole hours only — the venue sells hourly blocks.
+  durationsMinutes: z
+    .array(z.number().int().min(60).max(480).refine((m) => m % 60 === 0, 'Block lengths must be whole hours.'))
+    .min(1)
+    .max(8),
+  maxPlayers: z.number().int().min(1).max(50),
   holdMinutes: z.number().int().min(2).max(120),
-  cancellationHours: z.number().int().min(0).max(168),
+  heroImageUrl: z.string().trim().max(500).refine(
+    (v) => v === '' || /^https?:\/\//i.test(v),
+    'Give a full image URL starting with http:// or https://, or leave it blank.',
+  ),
   contactViber: z.string().trim().max(40),
 });
 

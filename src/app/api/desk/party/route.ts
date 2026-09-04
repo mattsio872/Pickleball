@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { requireStaff } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { findByRefWithParty } from '@/lib/booking';
-import { getSettings } from '@/lib/settings';
 import { route } from '@/lib/api';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 
@@ -24,11 +23,6 @@ export const POST = route(async (request: NextRequest) => {
   if (!booking) throw new NotFoundError('No booking for that reference.');
   if (booking.status !== 'CONFIRMED') {
     throw new ValidationError('That booking is not confirmed.');
-  }
-
-  const settings = await getSettings();
-  if (booking.players.length >= settings.maxPlayers) {
-    throw new ValidationError(`This party is already at the ${settings.maxPlayers}-player limit.`);
   }
 
   const player = await prisma.playerRegistration.create({

@@ -9,7 +9,6 @@ type Customer = {
   mobile: string;
   bookings: number;
   confirmedBookings: number;
-  cancelledBookings: number;
   totalSpentCents: number;
   firstBookedAt: string;
   lastBookedAt: string;
@@ -135,9 +134,6 @@ export function CustomersPanel({ initial, initialTotal }: { initial: Customer[];
                     </td>
                     <td>
                       {c.confirmedBookings} confirmed
-                      {c.cancelledBookings > 0 && (
-                        <span className="muted"> · {c.cancelledBookings} cancelled</span>
-                      )}
                       <br />
                       <span className="muted" style={{ fontSize: 12 }}>
                         since {shortDate(c.firstBookedAt)}

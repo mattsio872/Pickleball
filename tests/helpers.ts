@@ -27,7 +27,9 @@ export async function resetDatabase() {
   );
 }
 
-export async function seedVenue(overrides: Partial<{ hourlyRateCents: number; openHour: number; closeHour: number }> = {}) {
+export async function seedVenue(
+  overrides: Partial<{ hourlyRateCents: number; openHour: number; closeHour: number; durationsMinutes: number[] }> = {},
+) {
   const settings = await prisma.settings.create({
     data: { id: 1, hourlyRateCents: 65000, openHour: 6, closeHour: 23, ...overrides },
   });

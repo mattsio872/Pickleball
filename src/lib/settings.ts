@@ -24,7 +24,7 @@ export type PublicSettings = {
   durationsMinutes: number[];
   maxPlayers: number;
   holdMinutes: number;
-  cancellationHours: number;
+  heroImageUrl: string;
   contactViber: string;
 };
 
@@ -41,7 +41,7 @@ export function toPublicSettings(s: Settings): PublicSettings {
     durationsMinutes: [...s.durationsMinutes].sort((a, b) => a - b),
     maxPlayers: s.maxPlayers,
     holdMinutes: s.holdMinutes,
-    cancellationHours: s.cancellationHours,
+    heroImageUrl: s.heroImageUrl,
     contactViber: s.contactViber,
   };
 }

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { getSettings } from '@/lib/settings';
+import { currentCustomer } from '@/lib/customer-auth';
 import { formatPeso } from '@/lib/money';
 import { timeLabel } from '@/lib/time';
 import { SiteHeader } from '@/components/SiteHeader';
@@ -24,6 +25,7 @@ const STEPS = [
 
 export default async function HomePage() {
   const settings = await getSettings();
+  const customer = await currentCustomer();
   const courts = await prisma.court.findMany({
     where: { active: true },
     orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }],
@@ -45,8 +47,8 @@ export default async function HomePage() {
       a: `The desk can add them against your reference on the spot, as long as your pass has been scanned and you are within the ${settings.maxPlayers}-player limit.`,
     },
     {
-      q: 'Can I cancel or move my slot?',
-      a: `Free cancellation or reschedule up to ${settings.cancellationHours} hours before your start time, refunded to the original payment method.`,
+      q: 'What if we cannot make our slot?',
+      a: 'Court time is booked and paid for the slot you chose, and is not refundable. Message the desk as early as you can and we will do what we can to help.',
     },
     {
       q: 'Is one QR enough for the whole group?',
@@ -56,7 +58,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <SiteHeader venueName={settings.venueName} city={settings.city} />
+      <SiteHeader venueName={settings.venueName} city={settings.city} customerName={customer?.name} />
 
       <main style={{ paddingBottom: 64 }}>
         <section className="container hero-grid" style={{ padding: '64px 24px 72px' }}>
@@ -95,7 +97,12 @@ export default async function HomePage() {
               </span>
             </div>
           </div>
-          <CourtMotif height={380} showHint />
+          <CourtMotif
+            height={380}
+            showHint={!settings.heroImageUrl}
+            imageUrl={settings.heroImageUrl || undefined}
+            alt={`Inside ${settings.venueName}`}
+          />
         </section>
 
         <section className="stat-band">
@@ -129,7 +136,7 @@ export default async function HomePage() {
           <div className="card-grid">
             {courts.map((court) => (
               <article key={court.id} className="card elev-sm">
-                <CourtThumb />
+                <CourtThumb imageUrl={court.imageUrl || undefined} alt={`Court ${court.code} — ${court.name}`} />
                 <div className="card-kicker">Court {court.code}</div>
                 <div className="card-title">{court.name}</div>
                 <p className="card-body">{court.blurb}</p>
@@ -179,7 +186,6 @@ export default async function HomePage() {
                 {longestBlock / 60} hour blocks
               </li>
               <li>Net, balls and towel service included</li>
-              <li>Free cancellation up to {settings.cancellationHours} hours before</li>
               <li>Locker and shower access</li>
             </ul>
           </div>

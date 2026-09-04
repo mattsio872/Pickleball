@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { prisma } from '@/lib/db';
-import { createHold, confirmBooking, cancelBooking } from '@/lib/booking';
+import { createHold, confirmBooking } from '@/lib/booking';
 import { customerHistory, listCustomers } from '@/lib/customers';
 import { migrateTestDatabase, resetDatabase, seedVenue, NOW, TEST_DAY } from './helpers';
 
@@ -60,14 +60,11 @@ describe('customer directory', () => {
     await book({ courtId: courtA, hour: 9, name: 'Juan', email: 'juan@example.com', confirm: true });
     // Held but never paid.
     await book({ courtId: courtA, hour: 11, name: 'Juan', email: 'juan@example.com' });
-    const cancelled = await book({ courtId: courtA, hour: 13, name: 'Juan', email: 'juan@example.com', confirm: true });
-    await cancelBooking(cancelled.id, NOW);
 
     const { customers } = await listCustomers();
     const juan = customers[0];
-    expect(juan.bookings).toBe(3);
+    expect(juan.bookings).toBe(2);
     expect(juan.confirmedBookings).toBe(1);
-    expect(juan.cancelledBookings).toBe(1);
     expect(juan.totalSpentCents).toBe(65000);
   });
 

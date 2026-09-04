@@ -47,16 +47,22 @@ describe('references', () => {
 describe('createHold', () => {
   it('holds a slot at the right instant and price', async () => {
     const booking = await createHold(
-      { courtId: courtA.id, dayKey: TEST_DAY, startMinutes: 19 * 60, durationMinutes: 90, ...customer },
+      { courtId: courtA.id, dayKey: TEST_DAY, startMinutes: 19 * 60, durationMinutes: 120, ...customer },
       NOW,
     );
 
     expect(booking.status).toBe('HELD');
     expect(booking.startsAt.toISOString()).toBe('2026-09-11T11:00:00.000Z'); // 7PM Manila
-    expect(booking.endsAt.toISOString()).toBe('2026-09-11T12:30:00.000Z');
-    expect(booking.totalCents).toBe(97500);
+    expect(booking.endsAt.toISOString()).toBe('2026-09-11T13:00:00.000Z');
+    expect(booking.totalCents).toBe(130000);
     expect(booking.hourlyRateCents).toBe(65000);
     expect(booking.holdExpiresAt).not.toBeNull();
+  });
+
+  it('refuses a block that is not a whole number of hours', async () => {
+    await expect(
+      createHold({ courtId: courtA.id, dayKey: TEST_DAY, startMinutes: 19 * 60, durationMinutes: 90, ...customer }, NOW),
+    ).rejects.toThrow(ValidationError);
   });
 
   it('adds the booker to the roster', async () => {
@@ -90,7 +96,7 @@ describe('createHold', () => {
 
   it('rejects a duration the venue does not sell', async () => {
     await expect(
-      createHold({ courtId: courtA.id, dayKey: TEST_DAY, startMinutes: 19 * 60, durationMinutes: 45, ...customer }, NOW),
+      createHold({ courtId: courtA.id, dayKey: TEST_DAY, startMinutes: 19 * 60, durationMinutes: 240, ...customer }, NOW),
     ).rejects.toThrow(ValidationError);
   });
 
@@ -335,8 +341,8 @@ describe('availability', () => {
   });
 
   it('prices the day for the chosen duration', async () => {
-    const day = await getDayAvailability({ dayKey: TEST_DAY, durationMinutes: 90, now: NOW });
-    expect(day.totalCents).toBe(97500);
+    const day = await getDayAvailability({ dayKey: TEST_DAY, durationMinutes: 120, now: NOW });
+    expect(day.totalCents).toBe(130000);
   });
 });
 

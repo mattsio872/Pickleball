@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, ApiRequestError, formatPesoClient } from '@/lib/client';
 
-type Court = { id: string; code: string; name: string; blurb: string; meta: string; active: boolean; sortOrder: number };
+type Court = { id: string; code: string; name: string; blurb: string; meta: string; imageUrl: string; active: boolean; sortOrder: number };
 type Closure = { id: string; courtCode: string | null; label: string; reason: string };
 type SettingsShape = {
   venueName: string;
@@ -16,7 +16,7 @@ type SettingsShape = {
   durationsMinutes: number[];
   maxPlayers: number;
   holdMinutes: number;
-  cancellationHours: number;
+  heroImageUrl: string;
   contactViber: string;
 };
 
@@ -34,7 +34,7 @@ export function SettingsPanel({ initial }: { initial: SettingsShape }) {
   const [form, setForm] = useState({
     ...initial,
     hourlyRatePesos: initial.hourlyRateCents / 100,
-    durations: initial.durationsMinutes.join(', '),
+    durations: initial.durationsMinutes.map((m) => m / 60).join(', '),
   });
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; message: string } | null>(null);
@@ -44,10 +44,12 @@ export function SettingsPanel({ initial }: { initial: SettingsShape }) {
     setBusy(true);
     setNotice(null);
     try {
+      // Entered in hours; stored in minutes. The venue sells whole hours only.
       const durationsMinutes = form.durations
         .split(',')
         .map((v) => Number(v.trim()))
-        .filter((v) => Number.isFinite(v) && v > 0);
+        .filter((v) => Number.isFinite(v) && v > 0)
+        .map((hours) => Math.round(hours * 60));
 
       await api('/api/admin/settings', {
         method: 'PUT',
@@ -61,7 +63,7 @@ export function SettingsPanel({ initial }: { initial: SettingsShape }) {
           durationsMinutes,
           maxPlayers: Number(form.maxPlayers),
           holdMinutes: Number(form.holdMinutes),
-          cancellationHours: Number(form.cancellationHours),
+          heroImageUrl: form.heroImageUrl.trim(),
           contactViber: form.contactViber,
         }),
       });
@@ -101,11 +103,20 @@ export function SettingsPanel({ initial }: { initial: SettingsShape }) {
         {field('hourlyRatePesos', 'Hourly rate (₱)', { type: 'number', min: 0, step: 10 })}
         {field('openHour', 'Opens (hour, 0–23)', { type: 'number', min: 0, max: 23 })}
         {field('closeHour', 'Closes (hour, 1–24)', { type: 'number', min: 1, max: 24 })}
-        {field('durations', 'Durations (minutes, comma-separated)')}
+        {field('durations', 'Block lengths in hours, comma-separated')}
         {field('maxPlayers', 'Players per court', { type: 'number', min: 1, max: 20 })}
         {field('holdMinutes', 'Hold window (minutes)', { type: 'number', min: 2, max: 120 })}
-        {field('cancellationHours', 'Free cancellation (hours)', { type: 'number', min: 0, max: 168 })}
         {field('contactViber', 'Desk Viber number')}
+      </div>
+      <div className="field" style={{ marginTop: 14 }}>
+        <label htmlFor="s-heroImageUrl">Hero image URL (optional)</label>
+        <input
+          id="s-heroImageUrl"
+          className="input"
+          value={form.heroImageUrl}
+          placeholder="https://… — leave blank to show the generated artwork"
+          onChange={(e) => setForm({ ...form, heroImageUrl: e.target.value })}
+        />
       </div>
       <button className="btn btn-primary" style={{ marginTop: 18, padding: '10px 18px' }} disabled={busy}>
         {busy ? 'Saving…' : 'Save settings'}
@@ -117,7 +128,7 @@ export function SettingsPanel({ initial }: { initial: SettingsShape }) {
 export function CourtsPanel({ initial }: { initial: Court[] }) {
   const router = useRouter();
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; message: string } | null>(null);
-  const [adding, setAdding] = useState({ code: '', name: '', blurb: '', meta: '' });
+  const [adding, setAdding] = useState({ code: '', name: '', blurb: '', meta: '', imageUrl: '' });
   const [busy, setBusy] = useState(false);
 
   async function send(path: string, method: string, body: unknown, okMessage: string) {
@@ -145,6 +156,7 @@ export function CourtsPanel({ initial }: { initial: Court[] }) {
           <tr>
             <th>Court</th>
             <th>Name</th>
+            <th>Photo</th>
             <th>Status</th>
             <th />
           </tr>
@@ -154,6 +166,24 @@ export function CourtsPanel({ initial }: { initial: Court[] }) {
             <tr key={c.id}>
               <td className="mono">{c.code}</td>
               <td>{c.name}</td>
+              <td style={{ minWidth: 220 }}>
+                <input
+                  className="input"
+                  style={{ minHeight: 30, padding: '3px 8px', fontSize: 12 }}
+                  defaultValue={c.imageUrl}
+                  placeholder="https://… (blank = artwork)"
+                  disabled={busy}
+                  onBlur={(e) => {
+                    if (e.target.value.trim() === c.imageUrl) return;
+                    void send(
+                      '/api/admin/courts',
+                      'PATCH',
+                      { id: c.id, imageUrl: e.target.value.trim() },
+                      `Photo updated for Court ${c.code}.`,
+                    );
+                  }}
+                />
+              </td>
               <td>
                 <span className={c.active ? 'tag tag-accent' : 'tag tag-neutral'}>{c.active ? 'Open' : 'Retired'}</span>
               </td>
@@ -183,7 +213,7 @@ export function CourtsPanel({ initial }: { initial: Court[] }) {
         onSubmit={async (e) => {
           e.preventDefault();
           const ok = await send('/api/admin/courts', 'POST', adding, `Court ${adding.code.toUpperCase()} added.`);
-          if (ok) setAdding({ code: '', name: '', blurb: '', meta: '' });
+          if (ok) setAdding({ code: '', name: '', blurb: '', meta: '', imageUrl: '' });
         }}
       >
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12 }}>
@@ -218,6 +248,16 @@ export function CourtsPanel({ initial }: { initial: Court[] }) {
               onChange={(e) => setAdding({ ...adding, meta: e.target.value })}
             />
           </div>
+        </div>
+        <div className="field" style={{ marginTop: 12 }}>
+          <label htmlFor="c-image">Photo URL (optional)</label>
+          <input
+            id="c-image"
+            className="input"
+            value={adding.imageUrl}
+            placeholder="https://… — leave blank to show the generated artwork"
+            onChange={(e) => setAdding({ ...adding, imageUrl: e.target.value })}
+          />
         </div>
         <div className="field" style={{ marginTop: 12 }}>
           <label htmlFor="c-blurb">Description</label>

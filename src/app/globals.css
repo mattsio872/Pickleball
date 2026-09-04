@@ -731,6 +731,9 @@ textarea.input { min-height: 90px; resize: vertical; }
   background-image: radial-gradient(var(--color-accent-2-300) 2.4px, transparent 2.5px);
   background-size: 26px 26px;
 }
+.motif-photo::before { content: none; }
+.motif-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
 .motif-ball {
   position: absolute; border-radius: 50%;
   background-image: radial-gradient(var(--color-neutral-100) 7px, transparent 7.5px);
@@ -789,6 +792,34 @@ textarea.input { min-height: 90px; resize: vertical; }
   background: var(--color-surface); border-radius: 8px; padding: 11px 13px; font-size: 13.5px;
 }
 .roster-row[data-checked='true'] { background: var(--color-accent-100); }
+
+/* — the weekly schedule grid — */
+.schedule-grid { width: 100%; border-collapse: separate; border-spacing: 2px; font-size: 12px; }
+.schedule-grid th { font-weight: 400; padding: 4px; text-align: center; }
+.schedule-grid th[scope='row'] {
+  text-align: right; padding-right: 8px; white-space: nowrap;
+  color: var(--color-neutral-600); font-size: 11px; vertical-align: top;
+}
+.schedule-grid thead th[data-today='true'] { color: var(--color-accent-700); }
+.schedule-grid td {
+  background: var(--color-surface); border-radius: 6px; padding: 4px;
+  min-width: 78px; height: 34px; vertical-align: top;
+  box-shadow: inset 0 0 0 1px var(--color-divider);
+}
+.schedule-grid td[data-today='true'] { box-shadow: inset 0 0 0 1px var(--color-accent-300); }
+.schedule-grid td[data-closed='true'] {
+  background: repeating-linear-gradient(135deg,
+    var(--color-neutral-200) 0 6px, var(--color-neutral-100) 6px 12px);
+}
+.schedule-closed {
+  font-size: 10px; letter-spacing: 0.06em; color: var(--color-neutral-600);
+}
+.schedule-chip {
+  display: inline-block; border-radius: 4px; padding: 2px 5px; margin: 1px;
+  font-size: 11px; line-height: 1.3; border: 1px solid transparent; cursor: default;
+}
+.schedule-chip[data-held='true'] { border-style: dashed; }
+.schedule-who { opacity: 0.75; }
 
 /* — misc — */
 .hero-grid {

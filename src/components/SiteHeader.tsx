@@ -5,10 +5,13 @@ export function SiteHeader({
   venueName,
   city,
   showNav = true,
+  customerName,
 }: {
   venueName: string;
   city: string;
   showNav?: boolean;
+  /** The signed-in customer, when there is one. */
+  customerName?: string | null;
 }) {
   return (
     <header className="site-header">
@@ -23,6 +26,11 @@ export function SiteHeader({
               <Link href="/#rates">Rates</Link>
               <Link href="/#faq">FAQ</Link>
             </>
+          )}
+          {customerName ? (
+            <Link href="/my">{customerName.split(' ')[0]}&rsquo;s bookings</Link>
+          ) : (
+            <Link href="/signin">Sign in</Link>
           )}
           <Link className="btn btn-primary" href="/book">
             Book a court

@@ -31,7 +31,6 @@ type VerifyResult =
       method: string | null;
       booker: string;
       mobile: string;
-      maxPlayers: number;
       players: Player[];
     };
 
@@ -302,7 +301,7 @@ export function DeskScanner() {
             </div>
 
             <div className="label-caps" style={{ marginBottom: 10 }}>
-              Party roster — {checkedCount} of {result.maxPlayers} checked in
+              Party roster — {checkedCount} of {result.players.length} checked in
             </div>
             <div className="stack" style={{ gap: 8 }}>
               {result.players.map((p) => (
@@ -322,7 +321,7 @@ export function DeskScanner() {
               ))}
             </div>
 
-            {result.outcome === 'admit' && result.players.length < result.maxPlayers && (
+            {result.outcome === 'admit' && (
               <form
                 className="row"
                 style={{ marginTop: 14 }}
@@ -346,7 +345,7 @@ export function DeskScanner() {
 
             <p className="muted" style={{ fontSize: 11.5, margin: '16px 0 0' }}>
               Players who signed in through the booker&rsquo;s join link arrive pre-registered; walk-on guests can be
-              added here up to {result.maxPlayers}.
+              added here, as many as turn up.
             </p>
           </div>
         )}

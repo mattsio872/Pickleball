@@ -79,6 +79,7 @@ export default async function AdminPage() {
     name: c.name,
     blurb: c.blurb,
     meta: c.meta,
+    imageUrl: c.imageUrl,
     active: c.active,
     sortOrder: c.sortOrder,
   }));
@@ -101,9 +102,13 @@ export default async function AdminPage() {
 
       <main className="container fade-in" style={{ padding: '32px 24px 64px' }}>
         <h2 style={{ marginBottom: 6 }}>Admin</h2>
-        <p className="muted" style={{ fontSize: 13.5, marginBottom: 28 }}>
+        <p className="muted" style={{ fontSize: 13.5, marginBottom: 20 }}>
           Everything here takes effect on the public site immediately.
         </p>
+
+        <Link className="btn btn-secondary" style={{ marginBottom: 28 }} href="/admin/schedule">
+          Open the weekly schedule
+        </Link>
 
         {(!paymentsLive() || !emailLive()) && (
           <div className="banner banner-warn" style={{ marginBottom: 28 }}>
@@ -214,7 +219,7 @@ export default async function AdminPage() {
           <SettingsPanel initial={toPublicSettings(settings)} />
         ))}
 
-        {section('Courts', 'Retiring a court hides it from booking; existing bookings are protected.', (
+        {section('Courts', 'Photos show on the site as soon as you paste a URL; leave one blank for the generated artwork. Retiring a court hides it from booking; existing bookings are protected.', (
           <CourtsPanel initial={courtsPlain} />
         ))}
 

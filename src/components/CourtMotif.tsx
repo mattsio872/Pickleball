@@ -1,9 +1,33 @@
 /**
- * The generated court artwork from the design, standing in until the venue
- * supplies photographs. Kept as a component so replacing it with an <img> later
- * is a one-file change.
+ * Court imagery.
+ *
+ * A photograph when the venue has supplied one, and the design's generated
+ * artwork when it has not — so the site never shows a broken image or an empty
+ * grey box, and photographs can be added one at a time without a deploy.
+ *
+ * Plain <img> rather than next/image: the URLs are entered by an admin and
+ * could be any host, and next/image refuses a host that is not listed in the
+ * build configuration. A wrong URL should be a wrong picture, not a 500.
  */
-export function CourtMotif({ height, showHint = false }: { height: number; showHint?: boolean }) {
+export function CourtMotif({
+  height,
+  showHint = false,
+  imageUrl,
+  alt,
+}: {
+  height: number;
+  showHint?: boolean;
+  imageUrl?: string;
+  alt?: string;
+}) {
+  if (imageUrl) {
+    return (
+      <div className="motif motif-photo" style={{ height }}>
+        <img src={imageUrl} alt={alt ?? ''} loading="lazy" />
+      </div>
+    );
+  }
+
   return (
     <div className="motif" style={{ height }}>
       <div
@@ -49,7 +73,15 @@ export function CourtMotif({ height, showHint = false }: { height: number; showH
 }
 
 /** The smaller motif used on court cards. */
-export function CourtThumb() {
+export function CourtThumb({ imageUrl, alt }: { imageUrl?: string; alt?: string }) {
+  if (imageUrl) {
+    return (
+      <div className="motif motif-photo" style={{ height: 120, borderRadius: 8 }}>
+        <img src={imageUrl} alt={alt ?? ''} loading="lazy" />
+      </div>
+    );
+  }
+
   return (
     <div className="motif" style={{ height: 120, borderRadius: 8 }}>
       <div

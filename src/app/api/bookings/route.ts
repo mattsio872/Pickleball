@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createHold } from '@/lib/booking';
 import { getSettings } from '@/lib/settings';
 import { isDayKey } from '@/lib/time';
+import { currentCustomer } from '@/lib/customer-auth';
 import { route } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
@@ -32,6 +33,10 @@ export const POST = route(async (request: NextRequest) => {
   const input = body.parse(await request.json());
   const settings = await getSettings();
 
+  // A signed-in booker's booking joins their account. Booking as a guest is
+  // still allowed; it simply is not attached to anybody.
+  const customer = await currentCustomer();
+
   const booking = await createHold({
     courtId: input.courtId,
     dayKey: input.date,
@@ -40,6 +45,7 @@ export const POST = route(async (request: NextRequest) => {
     customerName: input.name,
     customerEmail: input.email,
     customerMobile: input.mobile,
+    customerId: customer?.customerId ?? null,
   });
 
   return NextResponse.json(

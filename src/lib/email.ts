@@ -25,7 +25,6 @@ export type PassEmailInput = {
   city: string;
   timezone: string;
   contactViber: string;
-  cancellationHours: number;
 };
 
 function escapeHtml(value: string): string {
@@ -82,7 +81,6 @@ function renderPassEmail(input: PassEmailInput, qrDataUrl: string): { subject: s
 
     <p style="margin:26px 0 0;font-size:12px;line-height:1.7;color:#75798c">
       Lost this email? Your pass lives at <a href="${passPageUrl(booking)}" style="color:#5d5294">this link</a>.<br>
-      Free cancellation up to ${input.cancellationHours} hours before your start time.<br>
       Questions? Message the desk on Viber at ${escapeHtml(input.contactViber)}.
     </p>
   </div>
@@ -100,7 +98,6 @@ function renderPassEmail(input: PassEmailInput, qrDataUrl: string): { subject: s
     `Your pass:  ${passPageUrl(booking)}`,
     `Join link:  ${joinUrl(booking)}`,
     '',
-    `Free cancellation up to ${input.cancellationHours} hours before your start time.`,
     `Questions? Viber ${input.contactViber}.`,
   ].join('\n');
 

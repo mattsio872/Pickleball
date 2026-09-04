@@ -35,6 +35,8 @@ export type CreateHoldInput = {
   customerName: string;
   customerEmail: string;
   customerMobile: string;
+  /** Set when the booker was signed in, so the booking joins their account. */
+  customerId?: string | null;
 };
 
 /**
@@ -56,6 +58,9 @@ export async function createHold(input: CreateHoldInput, now: Date = new Date())
   }
   if (input.startMinutes % 60 !== 0) {
     throw new ValidationError('Bookings start on the hour.');
+  }
+  if (input.durationMinutes % 60 !== 0) {
+    throw new ValidationError('Courts are booked in whole hours.');
   }
 
   const startsAt = venueInstant(input.dayKey, input.startMinutes, timezone);
@@ -88,6 +93,7 @@ export async function createHold(input: CreateHoldInput, now: Date = new Date())
           customerName: input.customerName,
           customerEmail: input.customerEmail.toLowerCase(),
           customerMobile: input.customerMobile,
+          customerId: input.customerId ?? null,
           passSecret: randomBytes(32).toString('hex'),
           players: {
             create: { name: input.customerName, contact: input.customerMobile, isBooker: true },
@@ -166,18 +172,6 @@ export async function requireByRef(ref: string): Promise<BookingWithCourt> {
   const booking = await findByRef(ref);
   if (!booking) throw new NotFoundError(`No booking found for ${normaliseRef(ref)}.`);
   return booking;
-}
-
-/** Whether the free-cancellation window is still open. */
-export function cancellableUntil(booking: Booking, cancellationHours: number): Date {
-  return addMinutes(booking.startsAt, -cancellationHours * 60);
-}
-
-export async function cancelBooking(bookingId: string, now: Date = new Date()): Promise<Booking> {
-  return prisma.booking.update({
-    where: { id: bookingId },
-    data: { status: 'CANCELLED', holdExpiresAt: null, cancelledAt: now },
-  });
 }
 
 export { Prisma };

@@ -76,7 +76,7 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
                 ['Slot', slotLabel(booking.startsAt, booking.endsAt, settings.timezone)],
                 ['Amount paid', formatPeso(booking.totalCents)],
                 ['Booker', `${booking.customerName} · ${booking.customerMobile}`],
-                ['Party', `${booking.players.length} registered of ${settings.maxPlayers}`],
+                ['Party', `${booking.players.length} registered`],
               ].map(([label, value], i, all) => (
                 <div
                   key={label}

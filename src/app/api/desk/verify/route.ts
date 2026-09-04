@@ -84,7 +84,6 @@ export const POST = route(async (request: NextRequest) => {
     method: paidPayment?.method ? methodLabel(paidPayment.method) : null,
     booker: booking.customerName,
     mobile: booking.customerMobile,
-    maxPlayers: settings.maxPlayers,
     players: booking.players.map((p) => ({
       id: p.id,
       name: p.name,

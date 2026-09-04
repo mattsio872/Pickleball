@@ -97,9 +97,8 @@ export function formatVenue(instant: Date, timezone: string, pattern: string): s
   return formatInTimeZone(instant, timezone, pattern);
 }
 
-/** `1 hour`, `1.5 hours` — duration chips on the booking screen. */
+/** `1 hour`, `3 hours` — duration chips on the booking screen. */
 export function durationLabel(minutes: number): string {
   const hours = minutes / 60;
-  const rendered = Number.isInteger(hours) ? String(hours) : String(hours);
-  return `${rendered} ${hours === 1 ? 'hour' : 'hours'}`;
+  return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
 }

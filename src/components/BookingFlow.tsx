@@ -80,7 +80,14 @@ function dayChipLabels(dayKey: string, timezone: string, isToday: boolean) {
   return { dow, dom: d };
 }
 
-export function BookingFlow({ cancelledRef }: { cancelledRef?: string }) {
+export function BookingFlow({
+  cancelledRef,
+  savedDetails,
+}: {
+  cancelledRef?: string;
+  /** A signed-in customer's saved details, so they are not re-typed. */
+  savedDetails?: { name: string; email: string; mobile: string };
+}) {
   const router = useRouter();
 
   const [step, setStep] = useState<'slot' | 'pay'>('slot');
@@ -93,9 +100,9 @@ export function BookingFlow({ cancelledRef }: { cancelledRef?: string }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [mobile, setMobile] = useState('');
+  const [name, setName] = useState(savedDetails?.name ?? '');
+  const [email, setEmail] = useState(savedDetails?.email ?? '');
+  const [mobile, setMobile] = useState(savedDetails?.mobile ?? '');
   const [method, setMethod] = useState<MethodId>('gcash');
 
   const [submitting, setSubmitting] = useState(false);
@@ -406,6 +413,12 @@ export function BookingFlow({ cancelledRef }: { cancelledRef?: string }) {
               Cashless only. Your slot is held for {settings?.holdMinutes ?? 10} minutes from the moment you continue
               to the payment provider.
             </p>
+
+            {savedDetails && (
+              <div className="banner banner-info" style={{ marginBottom: 22 }}>
+                Filled in from your account. This booking will be saved to it.
+              </div>
+            )}
 
             <div className="label-caps" style={{ marginBottom: 10 }}>
               Payment method

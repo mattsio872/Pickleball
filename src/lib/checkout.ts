@@ -191,7 +191,6 @@ export async function applyPaymentEvent(event: PaymentEvent): Promise<EventOutco
     city: settings.city,
     timezone: settings.timezone,
     contactViber: settings.contactViber,
-    cancellationHours: settings.cancellationHours,
   });
   if (sent.sent) {
     await prisma.booking.update({

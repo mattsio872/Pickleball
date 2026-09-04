@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { getSettings } from '@/lib/settings';
+import { currentCustomer } from '@/lib/customer-auth';
 import { verifyPassToken, renderQrSvg, passUrl, joinUrl } from '@/lib/pass';
 import { formatPeso } from '@/lib/money';
 import { dateLabel, dayKeyOf, minutesIntoDayOf, timeLabel } from '@/lib/time';
@@ -32,6 +33,7 @@ export default async function PassPage({
   if (!verification.valid) notFound();
 
   const settings = await getSettings();
+  const customer = await currentCustomer();
   const booking = await prisma.booking.findUnique({
     where: { id: verification.booking.id },
     include: {
@@ -53,7 +55,7 @@ export default async function PassPage({
 
   return (
     <>
-      <SiteHeader venueName={settings.venueName} city={settings.city} showNav={false} />
+      <SiteHeader venueName={settings.venueName} city={settings.city} showNav={false} customerName={customer?.name} />
 
       <main className="container fade-in" style={{ padding: '32px 24px 64px' }}>
         {!confirmed && (
@@ -156,12 +158,11 @@ export default async function PassPage({
                       </span>
                     </div>
                   ))}
-                  {Array.from({ length: Math.max(0, settings.maxPlayers - booking.players.length) }).map((_, i) => (
-                    <div key={`empty-${i}`} className="roster-row">
-                      <span className="muted">Player {booking.players.length + i + 1} — awaiting sign-in</span>
-                      <span className="tag tag-outline">Pending</span>
-                    </div>
-                  ))}
+                  {booking.players.length === 1 && (
+                    <p className="muted" style={{ fontSize: 13, margin: '4px 0 0' }}>
+                      Nobody else has signed up yet. Invite as many players as you like — there is no limit.
+                    </p>
+                  )}
                 </div>
               </div>
             )}

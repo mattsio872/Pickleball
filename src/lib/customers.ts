@@ -19,7 +19,6 @@ export type CustomerSummary = {
   mobile: string;
   bookings: number;
   confirmedBookings: number;
-  cancelledBookings: number;
   /** Centavos, confirmed bookings only — held and expired ones were never paid. */
   totalSpentCents: number;
   firstBookedAt: string;
@@ -71,7 +70,6 @@ export async function listCustomers(options: { search?: string; limit?: number }
         mobile: booking.customerMobile,
         bookings: 1,
         confirmedBookings: booking.status === 'CONFIRMED' ? 1 : 0,
-        cancelledBookings: booking.status === 'CANCELLED' ? 1 : 0,
         totalSpentCents: booking.status === 'CONFIRMED' ? booking.totalCents : 0,
         firstBookedAt: booking.createdAt.toISOString(),
         lastBookedAt: booking.createdAt.toISOString(),
@@ -92,7 +90,6 @@ export async function listCustomers(options: { search?: string; limit?: number }
         }
       }
     }
-    if (booking.status === 'CANCELLED') existing.cancelledBookings += 1;
     // Ordered newest first, so anything later is older than what we have.
     existing.firstBookedAt = booking.createdAt.toISOString();
   }

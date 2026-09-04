@@ -38,13 +38,15 @@ model Settings {
   /// booking must have finished. A duration is offered only if it fits.
   openHour          Int      @default(6)
   closeHour         Int      @default(23)
-  /// Bookable durations in minutes, ascending.
-  durationsMinutes  Int[]    @default([60, 90, 120, 180])
+  /// Bookable durations in minutes, ascending. Whole hours only.
+  durationsMinutes  Int[]    @default([60, 120, 180])
+  /// Court capacity, shown in the marketing copy. Not a limit on invitations —
+  /// a booker may add as many players to their roster as they like.
   maxPlayers        Int      @default(4)
   /// How long an unpaid slot is held while the booker completes checkout.
   holdMinutes       Int      @default(10)
-  /// Free cancellation window promised on the site's FAQ.
-  cancellationHours Int      @default(12)
+  /// Optional hero photograph. The generated motif shows when this is blank.
+  heroImageUrl      String   @default("")
   contactViber      String   @default("0917 555 0134")
   updatedAt         DateTime @updatedAt
 
@@ -58,6 +60,8 @@ model Court {
   name      String
   blurb     String
   meta      String
+  /// Optional photograph. The generated motif shows when this is blank.
+  imageUrl  String    @default("")
   sortOrder Int       @default(0)
   active    Boolean   @default(true)
   createdAt DateTime  @default(now())
@@ -69,6 +73,22 @@ model Court {
   @@map("courts")
 }
 
+/// A customer with an account. Booking without one stays possible.
+model Customer {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  mobile       String
+  passwordHash String
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  bookings     Booking[]
+
+  @@map("customers")
+}
+
 enum BookingStatus {
   /// Slot reserved while the booker completes checkout; expires at holdExpiresAt.
   HELD
@@ -76,6 +96,8 @@ enum BookingStatus {
   CONFIRMED
   /// Hold lapsed without payment.
   EXPIRED
+  /// Retained for historical rows only. The venue does not offer cancellation,
+  /// so nothing in the application sets this any more.
   CANCELLED
 }
 
@@ -85,6 +107,11 @@ model Booking {
   ref             String        @unique
   courtId         String
   court           Court         @relation(fields: [courtId], references: [id], onDelete: Restrict)
+
+  /// Set when the booker was signed in, or when they later claimed the booking
+  /// with its reference. Null for a guest booking nobody has claimed.
+  customerId      String?
+  customer        Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   startsAt        DateTime      @db.Timestamptz(3)
   endsAt          DateTime      @db.Timestamptz(3)
@@ -120,6 +147,7 @@ model Booking {
   @@index([courtId, startsAt, endsAt])
   @@index([status, holdExpiresAt])
   @@index([customerEmail])
+  @@index([customerId, startsAt])
   @@map("bookings")
 }
 
