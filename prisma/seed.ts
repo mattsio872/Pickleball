@@ -5,7 +5,9 @@ import { hashPassword } from '../src/lib/auth';
  * Seeds the three courts from the design, the venue defaults, and two staff
  * accounts so the desk and admin screens can be opened immediately.
  *
- * Idempotent: safe to run against a database that already has data.
+ * Safe to re-run. Nothing that already exists is modified — not a court that
+ * has been renamed, not a staff password that has been changed — so seeding is
+ * always additive and can never undo work done in the admin UI.
  */
 const prisma = new PrismaClient();
 
@@ -36,12 +38,16 @@ const COURTS = [
 async function main() {
   await prisma.settings.upsert({ where: { id: 1 }, update: {}, create: { id: 1 } });
 
+  // Courts are created only when absent, never updated. Re-seeding is a normal
+  // thing to do — after a restore, or against a second environment — and a
+  // court the venue renamed in the admin UI must not silently revert to
+  // "Center" because someone ran the seed again.
+  const newCourts: string[] = [];
   for (const court of COURTS) {
-    await prisma.court.upsert({
-      where: { code: court.code },
-      update: { name: court.name, blurb: court.blurb, meta: court.meta, sortOrder: court.sortOrder },
-      create: court,
-    });
+    const existing = await prisma.court.findUnique({ where: { code: court.code } });
+    if (existing) continue;
+    await prisma.court.create({ data: court });
+    newCourts.push(court.code);
   }
 
   // Passwords come from the environment when given, so a production database
@@ -72,7 +78,12 @@ async function main() {
     created.push(person.email);
   }
 
-  console.log(`Seeded ${COURTS.length} courts and venue settings.`);
+  console.log(
+    newCourts.length > 0
+      ? `Created courts: ${newCourts.join(', ')}`
+      : 'Courts already existed — left untouched.',
+  );
+  console.log('Venue settings ready.');
   console.log(
     created.length > 0
       ? `Created staff accounts: ${created.join(', ')}`

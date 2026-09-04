@@ -187,28 +187,52 @@ Shortest path, about ten minutes:
    correct for an unpooled database, and the reason a plain local Postgres
    needs no second variable.
 3. **Seed it once.** The deploy creates the tables but leaves them empty — no
-   courts means nothing to book — so this step is required. From a clone of
-   this repo on your own machine:
-   ```bash
-   npm install
+   courts means nothing to book — so this step is required. It runs from a
+   clone of this repo on your own machine, not on Vercel. Needs Node 20+.
 
+   ```bash
+   git clone https://github.com/mattsio872/Pickleball.git
+   cd Pickleball
+   npm install
+   ```
+
+   **macOS / Linux** (bash or zsh):
+
+   ```bash
    DATABASE_URL="<neon connection string>" \
-   SEED_DESK_PASSWORD="<a password>" \
-   SEED_ADMIN_PASSWORD="<another password>" \
+   SEED_DESK_PASSWORD="<a real password>" \
+   SEED_ADMIN_PASSWORD="<another real password>" \
      npm run db:seed
    ```
-   That creates the courts, the venue defaults and the two staff accounts.
-   Either connection string works here — seeding does not touch the pooler
+
+   **Windows PowerShell** — `VAR=value command` and trailing `\` are bash
+   syntax and do not work here. Set the variables first, each on its own line:
+
+   ```powershell
+   $env:DATABASE_URL="<neon connection string>"
+   $env:SEED_DESK_PASSWORD="<a real password>"
+   $env:SEED_ADMIN_PASSWORD="<another real password>"
+   npm run db:seed
+   ```
+
+   Substitute real values — the angle brackets are placeholders. A literal
+   `<neon connection string>` produces *"the URL must start with the protocol
+   postgresql://"*, and a literal password becomes your actual password.
+
+   Expect:
+
+   ```
+   Created courts: A, B, C
+   Venue settings ready.
+   Created staff accounts: desk@picklelounge.ph, admin@picklelounge.ph
+   ```
+
+   Either Neon string works here — seeding does not touch the pooler
    restriction that migrations do.
 
-   Setting the two password variables is worth the extra typing: omit them and
-   the accounts are created with `desk1234` / `admin1234`, which are published
-   in this repository, on accounts that can verify passes and read every
-   booking. The seed says so loudly when it uses them.
-
-   Re-running is safe. Courts and settings are updated in place, and existing
-   staff accounts are left untouched — so changing a password means changing it
-   in the admin UI, not re-seeding.
+   Re-running is safe and purely additive: nothing that already exists is
+   modified, so a court you renamed in the admin UI survives, and **so does a
+   password you regret**. To change one, see below.
 
 If a deploy fails at **Collecting page data** naming a route you have never
 touched, the real cause is a missing variable — the error names it a few lines
@@ -273,7 +297,11 @@ payment: it is logged, and the booker can still reach their pass by link.
   own domain is used automatically — then set it when you point a custom domain
   at the project.
 - **Change the seeded staff passwords**, or seed with `SEED_DESK_PASSWORD` /
-  `SEED_ADMIN_PASSWORD` set so the defaults never exist.
+  `SEED_ADMIN_PASSWORD` set so the defaults never exist. Use
+  `npm run staff:password` to change one afterwards.
+- **Never paste a connection string into a chat, issue or commit** — it carries
+  the database password. If one leaks, reset the role's password in the Neon
+  console and update `DATABASE_URL` / `DIRECT_URL` wherever they are set.
 
 ### 5. Deploy
 
@@ -310,24 +338,32 @@ src/
 tests/                       87 tests, integration ones against real Postgres
 ```
 
-## Seeding
+## Seeding and staff passwords
 
-`npm run db:seed` populates a database with the courts, venue settings and staff
-accounts. It needs only `DATABASE_URL`, and is idempotent — courts and settings
-are upserted, existing staff accounts are never overwritten.
+`npm run db:seed` populates a database with the courts, venue settings and
+staff accounts. It needs only `DATABASE_URL`, and generates the Prisma client
+first, so it works on a fresh clone.
+
+It is **additive only** — existing courts, settings and staff accounts are
+never modified. That makes re-running safe, and it means the seed cannot be
+used to fix a password.
+
+### Changing a staff password
 
 ```bash
-# Local (uses .env)
-npm run db:seed
-
-# A remote database, with real staff passwords
-DATABASE_URL="<connection string>" \
-SEED_DESK_PASSWORD="..." SEED_ADMIN_PASSWORD="..." \
-  npm run db:seed
+npm run staff:password -- admin@picklelounge.ph      # prompts, input hidden
 ```
 
-`npm run setup` runs generate + migrate + seed together, which is the one-liner
-for a fresh local database.
+```powershell
+$env:DATABASE_URL="<connection string>"
+npm run staff:password -- admin@picklelounge.ph
+```
+
+Run it with no email to list the accounts in the database. For scripting, set
+`STAFF_PASSWORD` and it will not prompt — though note that puts the password in
+your shell history.
+
+There is no password-change screen in the admin UI yet; this script is the way.
 
 ## Deliberately not built
 
@@ -335,5 +371,8 @@ for a fresh local database.
   hours before, and the setting exists and is displayed, but the customer-facing
   cancel flow and the provider refund call are not implemented. `cancelBooking()`
   and a `refund()` method on the gateway are in place to build on.
+- **A staff-management screen.** Accounts are created by the seed and their
+  passwords changed with `npm run staff:password`; there is no UI for adding,
+  removing or editing staff.
 - **Add-ons at the desk.** Listed on the rates section as the design has them,
   but charged manually — they are not part of the booking total.

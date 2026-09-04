@@ -12,10 +12,11 @@
     "test:watch": "vitest",
     "db:push": "node scripts/prisma.mjs db push",
     "db:migrate": "node scripts/prisma.mjs migrate dev",
-    "db:seed": "tsx prisma/seed.ts",
+    "db:seed": "node scripts/prisma.mjs generate && tsx prisma/seed.ts",
     "db:studio": "node scripts/prisma.mjs studio",
     "setup": "node scripts/prisma.mjs generate && node scripts/prisma.mjs migrate deploy && tsx prisma/seed.ts",
-    "db:deploy": "node scripts/prisma.mjs migrate deploy"
+    "db:deploy": "node scripts/prisma.mjs migrate deploy",
+    "staff:password": "node scripts/prisma.mjs generate && tsx scripts/set-staff-password.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -43,5 +44,8 @@
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
     "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
