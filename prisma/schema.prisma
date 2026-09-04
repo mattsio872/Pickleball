@@ -1,0 +1,207 @@
+// Pickle Lounge — booking, payment and entry-pass schema.
+//
+// Postgres is the only provider, in development as well as production. The
+// no-double-booking guarantee below is a database-level EXCLUDE constraint
+// over a time range (migrations/.../booking_no_overlap), which SQLite cannot
+// express — developing against a database that cannot enforce it would mean
+// testing a weaker system than the one that ships.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Singleton row holding venue-wide configuration the admin can edit.
+model Settings {
+  id                Int      @id @default(1)
+  venueName         String   @default("Pickle Lounge")
+  city              String   @default("Quezon City")
+  timezone          String   @default("Asia/Manila")
+  currency          String   @default("PHP")
+  /// Court time is billed per hour, stored in centavos to keep money integral.
+  hourlyRateCents   Int      @default(65000)
+  /// Venue-local hours: first bookable start, and the hour by which every
+  /// booking must have finished. A duration is offered only if it fits.
+  openHour          Int      @default(6)
+  closeHour         Int      @default(23)
+  /// Bookable durations in minutes, ascending.
+  durationsMinutes  Int[]    @default([60, 90, 120, 180])
+  maxPlayers        Int      @default(4)
+  /// How long an unpaid slot is held while the booker completes checkout.
+  holdMinutes       Int      @default(10)
+  /// Free cancellation window promised on the site's FAQ.
+  cancellationHours Int      @default(12)
+  contactViber      String   @default("0917 555 0134")
+  updatedAt         DateTime @updatedAt
+
+  @@map("settings")
+}
+
+model Court {
+  id        String    @id @default(cuid())
+  /// Short public identifier shown as "Court A".
+  code      String    @unique
+  name      String
+  blurb     String
+  meta      String
+  sortOrder Int       @default(0)
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+
+  bookings  Booking[]
+  closures  Closure[]
+
+  @@index([active, sortOrder])
+  @@map("courts")
+}
+
+enum BookingStatus {
+  /// Slot reserved while the booker completes checkout; expires at holdExpiresAt.
+  HELD
+  /// Payment cleared. This is the only status that admits a party.
+  CONFIRMED
+  /// Hold lapsed without payment.
+  EXPIRED
+  CANCELLED
+}
+
+model Booking {
+  id              String        @id @default(cuid())
+  /// Human-quotable reference printed on the pass, e.g. PL-K7Q2M9.
+  ref             String        @unique
+  courtId         String
+  court           Court         @relation(fields: [courtId], references: [id], onDelete: Restrict)
+
+  startsAt        DateTime      @db.Timestamptz(3)
+  endsAt          DateTime      @db.Timestamptz(3)
+
+  status          BookingStatus @default(HELD)
+  /// When a HELD booking stops blocking the slot. Null once confirmed.
+  holdExpiresAt   DateTime?     @db.Timestamptz(3)
+
+  /// Rate captured at booking time so later rate changes never restate an
+  /// existing booking's price.
+  hourlyRateCents Int
+  totalCents      Int
+  currency        String        @default("PHP")
+
+  customerName    String
+  customerEmail   String
+  customerMobile  String
+
+  /// Per-booking secret mixed into the pass signature, so revoking one
+  /// booking's pass never invalidates every other pass.
+  passSecret      String
+
+  passEmailedAt   DateTime?
+  scannedAt       DateTime?
+  cancelledAt     DateTime?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  payments        Payment[]
+  players         PlayerRegistration[]
+
+  @@index([courtId, startsAt, endsAt])
+  @@index([status, holdExpiresAt])
+  @@index([customerEmail])
+  @@map("bookings")
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  bookingId         String
+  booking           Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  provider          String        @default("paymongo")
+  /// PayMongo Checkout Session id (cs_...).
+  checkoutSessionId String?       @unique
+  /// PayMongo Payment id (pay_...), present once the charge succeeds.
+  providerPaymentId String?
+  /// Wallet or card brand actually used, as reported by the provider.
+  method            String?
+  amountCents       Int
+  currency          String        @default("PHP")
+  status            PaymentStatus @default(PENDING)
+  checkoutUrl       String?
+  paidAt            DateTime?
+  raw               Json?
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([bookingId])
+  @@map("payments")
+}
+
+/// A player in the booker's party, self-registered through the join link.
+model PlayerRegistration {
+  id          String    @id @default(cuid())
+  bookingId   String
+  booking     Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  name        String
+  contact     String?
+  isBooker    Boolean   @default(false)
+  checkedInAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([bookingId])
+  @@map("player_registrations")
+}
+
+/// Maintenance window or holiday. A null courtId closes every court.
+model Closure {
+  id        String   @id @default(cuid())
+  courtId   String?
+  court     Court?   @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  startsAt  DateTime @db.Timestamptz(3)
+  endsAt    DateTime @db.Timestamptz(3)
+  reason    String
+  createdAt DateTime @default(now())
+
+  @@index([startsAt, endsAt])
+  @@map("closures")
+}
+
+enum StaffRole {
+  STAFF
+  ADMIN
+}
+
+model StaffUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         StaffRole @default(STAFF)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@map("staff_users")
+}
+
+/// Provider events already applied, so a redelivered webhook is a no-op.
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  provider    String   @default("paymongo")
+  eventId     String
+  type        String
+  payload     Json
+  processedAt DateTime @default(now())
+
+  @@unique([provider, eventId])
+  @@map("webhook_events")
+}
