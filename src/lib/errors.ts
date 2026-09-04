@@ -45,6 +45,23 @@ export class ForbiddenError extends AppError {
   }
 }
 
+/**
+ * The deployment is missing configuration it needs to serve a request.
+ *
+ * Distinct from a bug: nothing is wrong with the code, a value is absent. It
+ * gets its own type so the response can say so — "something went wrong on our
+ * side" sends an operator hunting through logs for a fault that is really a
+ * blank field in a dashboard. The detail is logged, never returned.
+ */
+export class ConfigurationError extends AppError {
+  constructor(
+    message: string,
+    readonly missing: string[],
+  ) {
+    super(message, 503, 'not_configured');
+  }
+}
+
 export class PaymentError extends AppError {
   constructor(message: string) {
     super(message, 502, 'payment_failed');

@@ -376,6 +376,29 @@ the password unmasked.
 
 There is no password-change screen in the admin UI yet; this script is the way.
 
+### Is the deployment actually working?
+
+`GET /api/health` reports whether this deployment can do its job. Open it in a
+browser — it needs no sign-in, and reports the *names* of missing settings,
+never their values.
+
+```json
+{
+  "ok": false,
+  "checks": {
+    "configuration": { "ok": false, "missing": ["APP_SECRET"] },
+    "database": { "ok": true, "seeded": true, "courts": 3, "staffAccounts": 2 }
+  }
+}
+```
+
+It returns 503 when something is missing and 200 when everything it needs is
+present, so it also works as an uptime check.
+
+A request that needs a missing setting now answers *"This site is not finished
+being set up"* with a 503, rather than a generic 500 — the detail naming the
+variable goes to the server log only.
+
 ### When a command cannot connect
 
 `Authentication failed against database server ... for `(not available)`` means

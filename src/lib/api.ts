@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
-import { AppError } from './errors';
+import { AppError, ConfigurationError } from './errors';
 
 /** One shape for every API error, so the client never has to guess. */
 export type ApiError = { error: { code: string; message: string; details?: Record<string, string[]> } };
@@ -17,6 +17,16 @@ export function fail(code: string, message: string, status: number, details?: Re
  * failure — internal messages and stack traces are not the customer's business.
  */
 export function handleError(error: unknown) {
+  if (error instanceof ConfigurationError) {
+    // The full detail names environment variables; log it, do not return it.
+    console.error(`[config] ${error.message}`);
+    return fail(
+      error.code,
+      'This site is not finished being set up — a required setting is missing. ' +
+        'Whoever deployed it should check the server logs, or open /api/health.',
+      error.status,
+    );
+  }
   if (error instanceof AppError) {
     const details = 'details' in error ? (error as { details?: Record<string, string[]> }).details : undefined;
     return fail(error.code, error.message, error.status, details);

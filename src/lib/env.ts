@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ConfigurationError } from './errors';
 
 /**
  * Server-side configuration.
@@ -48,11 +49,13 @@ export function env(): Env {
 
   const parsed = schema.safeParse(process.env);
   if (!parsed.success) {
+    const missing = [...new Set(parsed.error.issues.map((i) => String(i.path[0])))];
     const issues = parsed.error.issues.map((i) => `  • ${i.path.join('.')}: ${i.message}`).join('\n');
-    throw new Error(
+    throw new ConfigurationError(
       `Invalid environment configuration:\n${issues}\n\n` +
         'Set these where the app runs — locally in .env (copy .env.example), or in your ' +
         "host's environment variables. See the README.",
+      missing,
     );
   }
   cached = parsed.data;
