@@ -205,14 +205,17 @@ Shortest path, about ten minutes:
      npm run db:seed
    ```
 
-   **Windows PowerShell** — `VAR=value command` and trailing `\` are bash
-   syntax and do not work here. Set the variables first, each on its own line:
+   **Windows PowerShell** — two differences. `VAR=value command` and trailing
+   `\` are bash syntax and do not work; set the variables first, each on its
+   own line. And use `npm.cmd`, not `npm`: PowerShell's default execution
+   policy blocks `npm.ps1` with *"running scripts is disabled on this
+   system"*, while `npm.cmd` bypasses it and needs no policy change.
 
    ```powershell
    $env:DATABASE_URL="<neon connection string>"
    $env:SEED_DESK_PASSWORD="<a real password>"
    $env:SEED_ADMIN_PASSWORD="<another real password>"
-   npm run db:seed
+   npm.cmd run db:seed
    ```
 
    Substitute real values — the angle brackets are placeholders. A literal
@@ -350,20 +353,36 @@ used to fix a password.
 
 ### Changing a staff password
 
+macOS / Linux:
+
 ```bash
-npm run staff:password -- admin@picklelounge.ph      # prompts, input hidden
+DATABASE_URL="<connection string>" npm run staff:password -- admin@picklelounge.ph
 ```
+
+Windows PowerShell (note `npm.cmd`):
 
 ```powershell
 $env:DATABASE_URL="<connection string>"
-npm run staff:password -- admin@picklelounge.ph
+npm.cmd run staff:password -- admin@picklelounge.ph
 ```
 
-Run it with no email to list the accounts in the database. For scripting, set
-`STAFF_PASSWORD` and it will not prompt — though note that puts the password in
-your shell history.
+It prompts for the new password and masks what you type. Run it with no email
+to list the accounts in the database.
+
+For scripting, set `STAFF_PASSWORD` and it will not prompt — but that puts the
+password in your shell history, so prefer the prompt when typing by hand. With
+no interactive terminal and no `STAFF_PASSWORD`, it stops rather than reading
+the password unmasked.
 
 There is no password-change screen in the admin UI yet; this script is the way.
+
+### Keeping credentials out of view
+
+A connection string contains the database password. Do not paste one into a
+chat, an issue, a screenshot or a commit. If one is exposed, reset the role's
+password in the Neon console (**Roles → Reset password**), then update
+`DATABASE_URL` and `DIRECT_URL` in Vercel and redeploy. The old string stops
+working immediately.
 
 ## Deliberately not built
 

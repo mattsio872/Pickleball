@@ -11,28 +11,81 @@
  * not end up in shell history or the process list. Set STAFF_PASSWORD instead
  * when scripting.
  */
-import { createInterface } from 'node:readline';
 import { PrismaClient } from '@prisma/client';
 import { hashPassword } from '../src/lib/auth';
 
 const prisma = new PrismaClient();
 
-/** Reads a line without echoing it to the terminal. */
+/**
+ * Reads a password without echoing it.
+ *
+ * Raw mode rather than readline's private `_writeToOutput` hook: that hook is
+ * an implementation detail and does not mask reliably on Windows terminals,
+ * where failing open means printing the password to the screen. Reading key by
+ * key masks the same way everywhere.
+ */
 function promptHidden(question: string): Promise<string> {
-  return new Promise((resolve) => {
-    const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true });
-    const output = rl as unknown as { output: NodeJS.WriteStream; _writeToOutput?: (s: string) => void };
-    let muted = false;
-    output._writeToOutput = (chunk: string) => {
-      if (!muted) output.output.write(chunk);
+  return new Promise((resolve, reject) => {
+    const { stdin, stdout } = process;
+
+    if (!stdin.isTTY) {
+      reject(
+        new Error(
+          'No interactive terminal, so the password cannot be prompted for safely.\n' +
+            'Set STAFF_PASSWORD in the environment instead.',
+        ),
+      );
+      return;
+    }
+
+    stdout.write(question);
+    stdin.setRawMode(true);
+    stdin.resume();
+    stdin.setEncoding('utf8');
+
+    let value = '';
+
+    const done = (result: string | null) => {
+      stdin.setRawMode(false);
+      stdin.pause();
+      stdin.removeListener('data', onData);
+      stdout.write('\n');
+      if (result === null) {
+        reject(new Error('Cancelled.'));
+      } else {
+        resolve(result);
+      }
     };
-    rl.question(question, (answer) => {
-      muted = false;
-      process.stdout.write('\n');
-      rl.close();
-      resolve(answer);
-    });
-    muted = true;
+
+    function onData(chunk: string) {
+      for (const char of chunk) {
+        switch (char) {
+          case '\r':
+          case '\n':
+          case '\u0004': // Ctrl-D
+            done(value);
+            return;
+          case '\u0003': // Ctrl-C
+            done(null);
+            return;
+          case '\u007f': // Backspace
+          case '\b':
+            if (value.length > 0) {
+              value = value.slice(0, -1);
+              stdout.write('\b \b');
+            }
+            break;
+          default:
+            // Ignore other control characters rather than storing them.
+            if (char >= ' ') {
+              value += char;
+              stdout.write('*');
+            }
+        }
+      }
+    }
+
+    stdin.on('data', onData);
   });
 }
 
