@@ -25,7 +25,7 @@ import { prisma } from './db';
 const SIGNATURE_BYTES = 16;
 
 function signature(ref: string, passSecret: string): string {
-  return createHmac('sha256', env.APP_SECRET)
+  return createHmac('sha256', env().APP_SECRET)
     .update(`pass.v1:${ref}:${passSecret}`)
     .digest('base64url')
     .slice(0, Math.ceil((SIGNATURE_BYTES * 8) / 6));
@@ -37,16 +37,16 @@ export function makePassToken(booking: Pick<Booking, 'ref' | 'passSecret'>): str
 
 /** The URL encoded in the QR — a phone camera opens the desk's verify screen. */
 export function passUrl(booking: Pick<Booking, 'ref' | 'passSecret'>): string {
-  return `${siteUrl}/desk/verify?t=${encodeURIComponent(makePassToken(booking))}`;
+  return `${siteUrl()}/desk/verify?t=${encodeURIComponent(makePassToken(booking))}`;
 }
 
 /** The booker's own copy of the pass, reachable without staff access. */
 export function passPageUrl(booking: Pick<Booking, 'ref' | 'passSecret'>): string {
-  return `${siteUrl}/pass/${encodeURIComponent(makePassToken(booking))}`;
+  return `${siteUrl()}/pass/${encodeURIComponent(makePassToken(booking))}`;
 }
 
 export function joinUrl(booking: Pick<Booking, 'ref'>): string {
-  return `${siteUrl}/join/${booking.ref}`;
+  return `${siteUrl()}/join/${booking.ref}`;
 }
 
 function constantTimeEquals(a: string, b: string): boolean {

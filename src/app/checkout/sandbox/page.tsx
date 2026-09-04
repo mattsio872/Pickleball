@@ -17,7 +17,7 @@ export default async function SandboxCheckoutPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  if (paymentsLive) notFound();
+  if (paymentsLive()) notFound();
 
   const params = await searchParams;
   const { session, ref, booking, amount, method, success, cancel } = params;

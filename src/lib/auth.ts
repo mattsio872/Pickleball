@@ -52,7 +52,7 @@ export type StaffSession = {
 };
 
 function secretKey(): Uint8Array {
-  return new TextEncoder().encode(env.APP_SECRET);
+  return new TextEncoder().encode(env().APP_SECRET);
 }
 
 export async function issueSession(session: StaffSession): Promise<string> {

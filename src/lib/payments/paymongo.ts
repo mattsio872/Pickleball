@@ -23,7 +23,7 @@ const FAILED_EVENTS = new Set(['payment.failed']);
 
 function authHeader(): string {
   // PayMongo uses HTTP Basic with the secret key as the username and no password.
-  return `Basic ${Buffer.from(`${env.PAYMONGO_SECRET_KEY}:`).toString('base64')}`;
+  return `Basic ${Buffer.from(`${env().PAYMONGO_SECRET_KEY}:`).toString('base64')}`;
 }
 
 type PayMongoError = { detail?: string; code?: string };
@@ -131,7 +131,7 @@ export class PayMongoGateway implements PaymentGateway {
   async parseWebhook(rawBody: string, headers: Headers): Promise<PaymentEvent | null> {
     const header = headers.get('paymongo-signature');
     if (!header) throw new PaymentError('Missing Paymongo-Signature header.');
-    if (!env.PAYMONGO_WEBHOOK_SECRET) {
+    if (!env().PAYMONGO_WEBHOOK_SECRET) {
       throw new PaymentError('PAYMONGO_WEBHOOK_SECRET is not configured; refusing to trust the webhook.');
     }
 
@@ -149,7 +149,7 @@ export class PayMongoGateway implements PaymentGateway {
       throw new PaymentError('Malformed Paymongo-Signature header.');
     }
 
-    const expected = createHmac('sha256', env.PAYMONGO_WEBHOOK_SECRET)
+    const expected = createHmac('sha256', env().PAYMONGO_WEBHOOK_SECRET)
       .update(`${timestamp}.${rawBody}`)
       .digest('hex');
 

@@ -26,7 +26,7 @@ const body = z.object({
  * PayMongo calls in. Disabled outright once real credentials are present.
  */
 export const POST = route(async (request: NextRequest) => {
-  if (paymentsLive) {
+  if (paymentsLive()) {
     throw new ForbiddenError('The sandbox gateway is disabled because PayMongo credentials are configured.');
   }
 
@@ -37,7 +37,7 @@ export const POST = route(async (request: NextRequest) => {
     ...input,
   });
 
-  const response = await fetch(`${siteUrl}/api/webhooks/payments`, {
+  const response = await fetch(`${siteUrl()}/api/webhooks/payments`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-sandbox-signature': signSandbox(payload) },
     body: payload,

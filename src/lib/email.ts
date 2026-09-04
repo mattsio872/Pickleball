@@ -15,7 +15,7 @@ import type { Booking, Court } from '@prisma/client';
 
 let client: Resend | null = null;
 function resend(): Resend {
-  if (!client) client = new Resend(env.RESEND_API_KEY);
+  if (!client) client = new Resend(env().RESEND_API_KEY);
   return client;
 }
 
@@ -111,7 +111,7 @@ export async function sendPassEmail(input: PassEmailInput): Promise<{ sent: bool
   const qrDataUrl = await renderQrDataUrl(passUrl(input.booking));
   const { subject, html, text } = renderPassEmail(input, qrDataUrl);
 
-  if (!emailLive) {
+  if (!emailLive()) {
     // Not an error: the booking is paid and the pass is valid either way.
     console.info(
       [
@@ -127,7 +127,7 @@ export async function sendPassEmail(input: PassEmailInput): Promise<{ sent: bool
 
   try {
     const result = await resend().emails.send({
-      from: env.EMAIL_FROM,
+      from: env().EMAIL_FROM,
       to: input.booking.customerEmail,
       subject,
       html,

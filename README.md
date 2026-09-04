@@ -192,6 +192,10 @@ Shortest path, about ten minutes:
    ```
    That creates the three courts, the venue defaults and the staff accounts.
 
+If a deploy fails at **Collecting page data** naming a route you have never
+touched, the real cause is a missing variable — the error names it a few lines
+above. `APP_SECRET` is the usual one.
+
 You now have a shareable URL. Payments run on the sandbox gateway and passes
 print to the Vercel logs until you add the credentials below — everything else
 is fully working, and every screen says which mode it is in.

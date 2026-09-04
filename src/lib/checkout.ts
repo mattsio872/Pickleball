@@ -56,8 +56,8 @@ export async function startCheckout(options: {
     customerName: booking.customerName,
     customerEmail: booking.customerEmail,
     customerMobile: booking.customerMobile,
-    successUrl: `${siteUrl}/pass/${encodeURIComponent(passToken)}?just_paid=1`,
-    cancelUrl: `${siteUrl}/book?cancelled=${booking.ref}`,
+    successUrl: `${siteUrl()}/pass/${encodeURIComponent(passToken)}?just_paid=1`,
+    cancelUrl: `${siteUrl()}/book?cancelled=${booking.ref}`,
   });
 
   await prisma.payment.create({

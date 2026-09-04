@@ -91,11 +91,11 @@ export default async function AdminPage() {
           Everything here takes effect on the public site immediately.
         </p>
 
-        {(!paymentsLive || !emailLive) && (
+        {(!paymentsLive() || !emailLive()) && (
           <div className="banner banner-warn" style={{ marginBottom: 28 }}>
             <strong>Not fully live yet.</strong>{' '}
-            {!paymentsLive && 'Payments are running on the built-in sandbox — no money moves until PAYMONGO_SECRET_KEY is set. '}
-            {!emailLive && 'Passes are being logged to the server console instead of emailed until RESEND_API_KEY is set.'}
+            {!paymentsLive() && 'Payments are running on the built-in sandbox — no money moves until PAYMONGO_SECRET_KEY is set. '}
+            {!emailLive() && 'Passes are being logged to the server console instead of emailed until RESEND_API_KEY is set.'}
           </div>
         )}
 

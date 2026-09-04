@@ -72,5 +72,5 @@ export class SandboxGateway implements PaymentGateway {
 
 /** Signs a sandbox webhook body with the app secret. Exported for the sandbox page. */
 export function signSandbox(rawBody: string): string {
-  return createHmac('sha256', env.APP_SECRET).update(`sandbox.v1.${rawBody}`).digest('hex');
+  return createHmac('sha256', env().APP_SECRET).update(`sandbox.v1.${rawBody}`).digest('hex');
 }

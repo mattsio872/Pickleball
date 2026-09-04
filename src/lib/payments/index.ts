@@ -7,7 +7,7 @@ let cached: PaymentGateway | null = null;
 
 /** The active gateway: PayMongo when credentials exist, the sandbox otherwise. */
 export function gateway(): PaymentGateway {
-  if (!cached) cached = paymentsLive ? new PayMongoGateway() : new SandboxGateway();
+  if (!cached) cached = paymentsLive() ? new PayMongoGateway() : new SandboxGateway();
   return cached;
 }
 
