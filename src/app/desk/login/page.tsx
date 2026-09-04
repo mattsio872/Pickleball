@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { currentStaff } from '@/lib/auth';
 import { getSettings } from '@/lib/settings';
 import { LoginForm } from './LoginForm';
+import { HomeLink } from '@/components/HomeLink';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +33,10 @@ export default async function StaffLoginPage({
         </div>
         <div style={{ background: 'var(--color-surface)', borderRadius: 14, padding: 24, boxShadow: 'var(--shadow-md)' }}>
           <LoginForm next={target} />
+        </div>
+
+        <div style={{ marginTop: 18, textAlign: 'center' }}>
+          <HomeLink label={`Back to ${settings.venueName}`} />
         </div>
       </div>
     </main>

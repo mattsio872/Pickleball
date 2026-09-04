@@ -4,6 +4,7 @@ import { getSettings } from '@/lib/settings';
 import { methodLabel } from '@/lib/payments';
 import { formatPeso } from '@/lib/money';
 import { SandboxCheckout } from './SandboxCheckout';
+import { HomeLink } from '@/components/HomeLink';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,6 +71,10 @@ export default async function SandboxCheckoutPage({
             successUrl={success}
             cancelUrl={cancel}
           />
+        </div>
+
+        <div style={{ marginTop: 18, textAlign: 'center' }}>
+          <HomeLink label={`Back to ${settings.venueName}`} />
         </div>
       </div>
     </main>

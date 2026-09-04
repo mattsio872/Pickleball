@@ -825,9 +825,13 @@ body { -webkit-font-smoothing: antialiased; }
   h1 { font-size: 34px; }
   h2 { font-size: 25px; }
   .container { padding-inline: 18px; }
-  .site-header .inner { padding: 12px 18px; gap: 14px; }
-  .site-nav { gap: 14px; }
-  .site-nav a { display: none; }
+  .site-header .inner { padding: 12px 18px; gap: 14px; flex-wrap: wrap; }
+  .site-nav { gap: 12px; flex-wrap: wrap; }
+  /* The marketing links fold away on a narrow screen, but never a button —
+     hiding every anchor took "Book a court" with it, and the staff nav
+     entirely, on the tablet the front desk is most likely to be holding. */
+  .site-nav-public a:not(.btn) { display: none; }
+  .site-nav-staff { font-size: 13px; row-gap: 8px; }
   .summary { position: static; }
   .flow-grid { gap: 26px; }
 }

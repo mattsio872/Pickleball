@@ -223,6 +223,10 @@ export function DeskScanner() {
             </button>
           </form>
         </div>
+
+        <a className="btn btn-ghost" style={{ marginTop: 12 }} href="/">
+          <span aria-hidden="true">←</span> Leave staff view
+        </a>
       </div>
 
       <div>

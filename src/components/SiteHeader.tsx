@@ -16,7 +16,7 @@ export function SiteHeader({
         <Link href="/" className="brand">
           {venueName} <span>· {city}</span>
         </Link>
-        <nav className="site-nav">
+        <nav className="site-nav site-nav-public">
           {showNav && (
             <>
               <Link href="/#courts">Courts</Link>
