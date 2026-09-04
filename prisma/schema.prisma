@@ -13,6 +13,16 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+
+  // Migrations need a connection that is NOT behind a connection pooler.
+  // Serverless hosts (Neon, Supabase) hand out a pooled string by default, and
+  // PgBouncer in transaction mode supports neither the DDL nor the advisory
+  // locks Prisma Migrate relies on — so a deploy that runs `migrate deploy`
+  // through the pooled URL fails. Point DATABASE_URL at the pooled string for
+  // the app's own queries and DIRECT_URL at the unpooled one for migrations.
+  // Running a single un-pooled Postgres (the local docker-compose one)? Set
+  // both to the same value.
+  directUrl = env("DIRECT_URL")
 }
 
 /// Singleton row holding venue-wide configuration the admin can edit.

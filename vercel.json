@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "prisma generate && prisma migrate deploy && next build",
+  "buildCommand": "prisma generate && DIRECT_URL=\"${DIRECT_URL:-$DATABASE_URL}\" prisma migrate deploy && next build",
   "framework": "nextjs",
   "regions": ["sin1"]
 }

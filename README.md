@@ -171,11 +171,21 @@ Shortest path, about ten minutes:
 1. **Database** — create a free project at [neon.tech](https://neon.tech) and
    copy the connection string.
 2. **Deploy** — at [vercel.com/new](https://vercel.com/new), import this repo
-   and set two environment variables:
-   - `DATABASE_URL` — the Neon string
+   and set three environment variables:
+   - `DATABASE_URL` — Neon's **pooled** connection string (hostname contains
+     `-pooler`). This is what the running app uses.
+   - `DIRECT_URL` — Neon's **direct / unpooled** string (same, without
+     `-pooler`). Migrations use this.
    - `APP_SECRET` — `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 
    Migrations run automatically on deploy (see [`vercel.json`](vercel.json)).
+
+   Why two database URLs: connection poolers do not support the DDL and
+   advisory locks Prisma Migrate needs, so a deploy that migrates through the
+   pooled URL fails. Serverless apps still want the pooled one at runtime. If
+   you only set `DATABASE_URL`, the build falls back to it for migrations —
+   correct for an unpooled database, and the reason a plain local Postgres
+   needs no second variable.
 3. **Seed it once** — from your machine, with `DATABASE_URL` pointed at Neon:
    ```bash
    DATABASE_URL="<neon string>" npm run db:seed
@@ -191,8 +201,16 @@ is fully working, and every screen says which mode it is in.
 ### 1. Database
 
 Any Postgres 14+ with the `btree_gist` extension available (Neon, Supabase,
-Vercel Postgres and RDS all qualify). Set `DATABASE_URL`. Migrations run on
-deploy via the build command in [`vercel.json`](vercel.json).
+Vercel Postgres and RDS all qualify). Set `DATABASE_URL`, and `DIRECT_URL` too
+if the database sits behind a connection pooler — see the note above. Migrations
+run on deploy via the build command in [`vercel.json`](vercel.json).
+
+**Finding the connection string on Neon:** open your project in the Neon
+Console and use the **Connect** button on the project dashboard. The panel that
+opens gives you the string, with a toggle between the *pooled* and *direct*
+connection — you want both, one for each variable. The password is part of the
+string; if the panel hides it there is a reveal control, and you can reset the
+role's password from the **Roles** section if it is ever lost.
 
 ### 2. PayMongo
 
