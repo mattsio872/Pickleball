@@ -29,8 +29,12 @@ export async function GET() {
       error instanceof ConfigurationError
         ? {
             ok: false,
-            missing: error.missing,
-            hint: 'Set these in your host\'s environment variables and redeploy. APP_SECRET must be 32+ characters.',
+            // Absent and "set to something invalid" need different fixes.
+            missing: error.problems.filter((p) => !p.present).map((p) => p.name),
+            invalid: error.problems
+              .filter((p) => p.present)
+              .map((p) => ({ name: p.name, problem: p.message })),
+            hint: 'Set or correct these in your host\'s environment variables and redeploy.',
           }
         : { ok: false, hint: 'Configuration could not be read.' };
   }
@@ -67,7 +71,21 @@ export async function GET() {
     checks.email = emailLive()
       ? { mode: 'resend' }
       : { mode: 'console', note: 'No RESEND_API_KEY — passes are logged, not emailed.' };
-    checks.siteUrl = siteUrl();
+    // A production deployment resolving to localhost would issue pass links
+    // and payment redirects nobody outside the server can open — valid
+    // configuration, silently wrong, and invisible until a customer complains.
+    const origin = siteUrl();
+    const localhost = /^https?:\/\/(localhost|127\.0\.0\.1)/i.test(origin);
+    if (localhost && process.env.NODE_ENV === 'production') {
+      ok = false;
+      checks.siteUrl = {
+        ok: false,
+        value: origin,
+        hint: 'Pass links and payment redirects are being built against localhost. Set NEXT_PUBLIC_SITE_URL to the public domain.',
+      };
+    } else {
+      checks.siteUrl = origin;
+    }
   } catch {
     // Already reported by the configuration check above.
   }

@@ -118,3 +118,55 @@ describe('feature detection', () => {
     expect(emailLive()).toBe(true);
   });
 });
+
+describe('values people actually paste', () => {
+  it('accepts a bare hostname, as copied from a hosting dashboard', () => {
+    process.env.NEXT_PUBLIC_SITE_URL = 'picklelounge.vercel.app';
+    expect(siteUrl()).toBe('https://picklelounge.vercel.app');
+  });
+
+  it('treats a blank value as unset rather than invalid', () => {
+    // A hosting dashboard makes an empty variable very easy to create, and
+    // "invalid url" is a confusing thing to say about an empty box.
+    process.env.NEXT_PUBLIC_SITE_URL = '';
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = 'picklelounge.vercel.app';
+    expect(siteUrl()).toBe('https://picklelounge.vercel.app');
+  });
+
+  it('treats whitespace as unset too', () => {
+    process.env.NEXT_PUBLIC_SITE_URL = '   ';
+    expect(siteUrl()).toBe('http://localhost:3000');
+  });
+
+  it('still rejects something that is not a hostname at all', () => {
+    process.env.NEXT_PUBLIC_SITE_URL = 'not a url at all !!';
+    resetEnvCache();
+    expect(() => env()).toThrow(/NEXT_PUBLIC_SITE_URL/);
+  });
+
+  it('reports a blank required value as absent, not as invalid', () => {
+    process.env.APP_SECRET = '';
+    resetEnvCache();
+    try {
+      env();
+      throw new Error('expected a configuration error');
+    } catch (error) {
+      const problems = (error as { problems?: { name: string; present: boolean }[] }).problems ?? [];
+      const appSecret = problems.find((p) => p.name === 'APP_SECRET');
+      expect(appSecret?.present).toBe(false);
+    }
+  });
+
+  it('reports a present-but-rejected value as invalid, not as missing', () => {
+    process.env.APP_SECRET = 'too-short';
+    resetEnvCache();
+    try {
+      env();
+      throw new Error('expected a configuration error');
+    } catch (error) {
+      const problems = (error as { problems?: { name: string; present: boolean }[] }).problems ?? [];
+      const appSecret = problems.find((p) => p.name === 'APP_SECRET');
+      expect(appSecret?.present).toBe(true);
+    }
+  });
+});

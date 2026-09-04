@@ -53,10 +53,17 @@ export class ForbiddenError extends AppError {
  * side" sends an operator hunting through logs for a fault that is really a
  * blank field in a dashboard. The detail is logged, never returned.
  */
+export type ConfigProblem = {
+  name: string;
+  /** True when the variable is set but its value was rejected. */
+  present: boolean;
+  message: string;
+};
+
 export class ConfigurationError extends AppError {
   constructor(
     message: string,
-    readonly missing: string[],
+    readonly problems: ConfigProblem[],
   ) {
     super(message, 503, 'not_configured');
   }

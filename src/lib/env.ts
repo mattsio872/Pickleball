@@ -18,23 +18,55 @@ import { ConfigurationError } from './errors';
  * optional is APP_SECRET — it signs entry passes and staff sessions, and a weak
  * one would let anyone mint a valid pass.
  */
+/**
+ * An unset variable and one set to an empty string mean the same thing — a
+ * hosting dashboard makes it very easy to create the latter — so blanks are
+ * normalised away before validation rather than failing as "invalid".
+ */
+const blankToUndefined = (value: unknown) =>
+  typeof value === 'string' && value.trim() === '' ? undefined : value;
+
+const optionalText = z.preprocess(blankToUndefined, z.string().optional());
+
+/**
+ * A public origin, accepting what people actually paste.
+ *
+ * A hosting dashboard shows the domain as `example.vercel.app`, so that is what
+ * gets copied in. Rejecting it for lacking a scheme is pedantry when the intent
+ * is unambiguous; it is upgraded to https instead.
+ */
+const originUrl = z.preprocess((value) => {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}, z.string().url('Must be a URL or a hostname, e.g. https://picklelounge.ph').optional());
+
 const schema = z.object({
-  DATABASE_URL: z.string().min(1, 'Required — the Postgres connection string.'),
-  APP_SECRET: z
-    .string({ required_error: 'Required — generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"' })
-    .min(32, 'Must be at least 32 characters. Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'),
-  NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
+  DATABASE_URL: z.preprocess(
+    blankToUndefined,
+    z.string({ required_error: 'Required — the Postgres connection string.' }).min(1),
+  ),
+  APP_SECRET: z.preprocess(
+    blankToUndefined,
+    z
+      .string({ required_error: 'Required — generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"' })
+      .min(32, 'Must be at least 32 characters. Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'),
+  ),
+  NEXT_PUBLIC_SITE_URL: originUrl,
   // Set by Vercel. VERCEL_PROJECT_PRODUCTION_URL is the stable production
   // domain; VERCEL_URL is unique per deployment and covers preview builds.
-  VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
-  VERCEL_URL: z.string().optional(),
+  VERCEL_PROJECT_PRODUCTION_URL: optionalText,
+  VERCEL_URL: optionalText,
 
-  PAYMONGO_SECRET_KEY: z.string().optional().default(''),
-  PAYMONGO_PUBLIC_KEY: z.string().optional().default(''),
-  PAYMONGO_WEBHOOK_SECRET: z.string().optional().default(''),
+  PAYMONGO_SECRET_KEY: optionalText.pipe(z.string().optional().default('')),
+  PAYMONGO_PUBLIC_KEY: optionalText.pipe(z.string().optional().default('')),
+  PAYMONGO_WEBHOOK_SECRET: optionalText.pipe(z.string().optional().default('')),
 
-  RESEND_API_KEY: z.string().optional().default(''),
-  EMAIL_FROM: z.string().optional().default('Pickle Lounge <onboarding@resend.dev>'),
+  RESEND_API_KEY: optionalText.pipe(z.string().optional().default('')),
+  EMAIL_FROM: optionalText.pipe(
+    z.string().optional().default('Pickle Lounge <onboarding@resend.dev>'),
+  ),
 
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 });
@@ -49,13 +81,26 @@ export function env(): Env {
 
   const parsed = schema.safeParse(process.env);
   if (!parsed.success) {
-    const missing = [...new Set(parsed.error.issues.map((i) => String(i.path[0])))];
-    const issues = parsed.error.issues.map((i) => `  • ${i.path.join('.')}: ${i.message}`).join('\n');
+    // "Missing" and "set to something wrong" need different fixes, and saying
+    // "missing" about a variable that is plainly present in the dashboard sends
+    // people looking in the wrong place.
+    const problems = [...new Map(
+      parsed.error.issues.map((issue) => {
+        const name = String(issue.path[0]);
+        const raw = process.env[name];
+        return [name, { name, present: raw !== undefined && raw.trim() !== '', message: issue.message }];
+      }),
+    ).values()];
+
+    const issues = problems
+      .map((p) => `  • ${p.name}: ${p.present ? 'set, but rejected — ' : ''}${p.message}`)
+      .join('\n');
+
     throw new ConfigurationError(
       `Invalid environment configuration:\n${issues}\n\n` +
         'Set these where the app runs — locally in .env (copy .env.example), or in your ' +
         "host's environment variables. See the README.",
-      missing,
+      problems,
     );
   }
   cached = parsed.data;
