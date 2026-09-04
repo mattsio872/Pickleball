@@ -186,11 +186,29 @@ Shortest path, about ten minutes:
    you only set `DATABASE_URL`, the build falls back to it for migrations —
    correct for an unpooled database, and the reason a plain local Postgres
    needs no second variable.
-3. **Seed it once** — from your machine, with `DATABASE_URL` pointed at Neon:
+3. **Seed it once.** The deploy creates the tables but leaves them empty — no
+   courts means nothing to book — so this step is required. From a clone of
+   this repo on your own machine:
    ```bash
-   DATABASE_URL="<neon string>" npm run db:seed
+   npm install
+
+   DATABASE_URL="<neon connection string>" \
+   SEED_DESK_PASSWORD="<a password>" \
+   SEED_ADMIN_PASSWORD="<another password>" \
+     npm run db:seed
    ```
-   That creates the three courts, the venue defaults and the staff accounts.
+   That creates the courts, the venue defaults and the two staff accounts.
+   Either connection string works here — seeding does not touch the pooler
+   restriction that migrations do.
+
+   Setting the two password variables is worth the extra typing: omit them and
+   the accounts are created with `desk1234` / `admin1234`, which are published
+   in this repository, on accounts that can verify passes and read every
+   booking. The seed says so loudly when it uses them.
+
+   Re-running is safe. Courts and settings are updated in place, and existing
+   staff accounts are left untouched — so changing a password means changing it
+   in the admin UI, not re-seeding.
 
 If a deploy fails at **Collecting page data** naming a route you have never
 touched, the real cause is a missing variable — the error names it a few lines
@@ -247,13 +265,15 @@ payment: it is logged, and the booker can still reach their pass by link.
 
 ### 4. Secrets and accounts
 
-- Set `APP_SECRET` to 32+ random bytes. Changing it later invalidates every
-  staff session and every issued pass.
+- Set `APP_SECRET` to 32+ random bytes — the app refuses to serve without it,
+  and a deploy that omits it fails while collecting page data. Changing it later
+  invalidates every staff session and every issued pass.
 - `NEXT_PUBLIC_SITE_URL` builds join links, pass links and the payment redirect
   URLs. On Vercel you can leave it unset for the first deploy — the platform's
   own domain is used automatically — then set it when you point a custom domain
   at the project.
-- **Delete or change the seeded staff accounts.**
+- **Change the seeded staff passwords**, or seed with `SEED_DESK_PASSWORD` /
+  `SEED_ADMIN_PASSWORD` set so the defaults never exist.
 
 ### 5. Deploy
 
@@ -289,6 +309,25 @@ src/
     api/                     Route handlers
 tests/                       87 tests, integration ones against real Postgres
 ```
+
+## Seeding
+
+`npm run db:seed` populates a database with the courts, venue settings and staff
+accounts. It needs only `DATABASE_URL`, and is idempotent — courts and settings
+are upserted, existing staff accounts are never overwritten.
+
+```bash
+# Local (uses .env)
+npm run db:seed
+
+# A remote database, with real staff passwords
+DATABASE_URL="<connection string>" \
+SEED_DESK_PASSWORD="..." SEED_ADMIN_PASSWORD="..." \
+  npm run db:seed
+```
+
+`npm run setup` runs generate + migrate + seed together, which is the one-liner
+for a fresh local database.
 
 ## Deliberately not built
 
