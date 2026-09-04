@@ -3,12 +3,20 @@ import { prisma } from '@/lib/db';
 
 let migrated = false;
 
-/** Brings the scratch database up to the current schema, once per run. */
+/**
+ * Brings the scratch database up to the current schema, once per run.
+ *
+ * Both connection variables have to be redirected. The datasource declares a
+ * `directUrl`, and Prisma Migrate reads *that* rather than `url` — so
+ * overriding DATABASE_URL alone would quietly migrate whatever DIRECT_URL
+ * points at (the development database) and leave the test database empty.
+ */
 export function migrateTestDatabase() {
   if (migrated) return;
+  const url = process.env.TEST_DATABASE_URL;
   execSync('npx prisma migrate deploy', {
     stdio: 'pipe',
-    env: { ...process.env, DATABASE_URL: process.env.TEST_DATABASE_URL },
+    env: { ...process.env, DATABASE_URL: url, DIRECT_URL: url },
   });
   migrated = true;
 }
