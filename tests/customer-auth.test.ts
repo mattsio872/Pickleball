@@ -21,7 +21,6 @@ afterAll(() => prisma.$disconnect());
 
 beforeEach(async () => {
   await resetDatabase();
-  await prisma.$executeRawUnsafe('TRUNCATE customers CASCADE');
   const { courts } = await seedVenue();
   courtA = courts[0].id;
 });

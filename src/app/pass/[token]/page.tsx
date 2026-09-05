@@ -3,7 +3,17 @@ import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { getSettings } from '@/lib/settings';
 import { currentCustomer } from '@/lib/customer-auth';
-import { verifyPassToken, renderQrSvg, passUrl, joinUrl } from '@/lib/pass';
+import {
+  verifyPassToken,
+  renderQrSvg,
+  passUrl,
+  joinUrl,
+  makePassToken,
+  makePlayerToken,
+  playerPassPageUrl,
+  playerPassUrl,
+  qrImagePath,
+} from '@/lib/pass';
 import { formatPeso } from '@/lib/money';
 import { dateLabel, dayKeyOf, minutesIntoDayOf, timeLabel } from '@/lib/time';
 import { methodLabel } from '@/lib/payments';
@@ -52,6 +62,20 @@ export default async function PassPage({
   const confirmed = booking.status === 'CONFIRMED';
   const qrSvg = await renderQrSvg(passUrl(booking));
   const join = joinUrl(booking);
+  const qrDownload = qrImagePath(makePassToken(booking));
+
+  // Each player carries their own QR so they can be admitted without waiting
+  // for the booker to arrive with theirs.
+  const playerPasses = confirmed
+    ? await Promise.all(
+        booking.players.map(async (player) => ({
+          player,
+          svg: await renderQrSvg(playerPassUrl(booking, player)),
+          download: qrImagePath(makePlayerToken(booking, player)),
+          page: playerPassPageUrl(booking, player),
+        })),
+      )
+    : [];
 
   return (
     <>
@@ -126,8 +150,8 @@ export default async function PassPage({
               <div style={{ marginTop: 34 }}>
                 <h4 style={{ marginBottom: 6 }}>Your players check themselves in</h4>
                 <p className="muted" style={{ fontSize: 13, marginBottom: 14, maxWidth: '46ch' }}>
-                  Send this link to your group. Each player registers their own name on it, and appears on the desk&rsquo;s
-                  roster when your pass is scanned.
+                  Send this link to your group. Each player registers their own name on it and gets a QR of their own,
+                  so anyone can be let in without waiting for you.
                 </p>
                 <div className="row" style={{ marginBottom: 18 }}>
                   <code
@@ -146,23 +170,42 @@ export default async function PassPage({
                   <CopyButton value={join} />
                 </div>
 
-                <div className="stack" style={{ gap: 8, maxWidth: 420 }}>
-                  {booking.players.map((p) => (
-                    <div key={p.id} className="roster-row">
-                      <span style={{ color: p.isBooker ? 'var(--color-text)' : 'var(--color-neutral-700)' }}>
-                        {p.name}
-                        {p.isBooker ? ' (booker)' : ''}
-                      </span>
-                      <span className={p.checkedInAt ? 'tag tag-accent' : 'tag tag-outline'}>
-                        {p.checkedInAt ? 'Checked in' : 'Registered'}
-                      </span>
+                <div className="stack" style={{ gap: 10, maxWidth: 460 }}>
+                  {playerPasses.map(({ player, svg, download, page }) => (
+                    <div key={player.id} className="player-pass">
+                      {/* The thumbnail is small to keep the roster a list; it
+                          opens the player's own page, where the code is big
+                          enough to scan off the screen. */}
+                      <Link
+                        className="player-pass-qr"
+                        href={page.replace(/^https?:\/\/[^/]+/, '')}
+                        aria-label={`Open ${player.name}'s pass`}
+                        dangerouslySetInnerHTML={{ __html: svg }}
+                      />
+                      <div className="player-pass-body">
+                        <div className="spread" style={{ alignItems: 'center', gap: 8 }}>
+                          <span style={{ color: player.isBooker ? 'var(--color-text)' : 'var(--color-neutral-700)' }}>
+                            {player.name}
+                            {player.isBooker ? ' (booker)' : ''}
+                          </span>
+                          <span className={player.checkedInAt ? 'tag tag-accent' : 'tag tag-outline'}>
+                            {player.checkedInAt ? 'Checked in' : 'Registered'}
+                          </span>
+                        </div>
+                        <div className="row" style={{ gap: 8, marginTop: 8 }}>
+                          <a className="btn btn-ghost btn-sm" href={download} download>
+                            Save QR
+                          </a>
+                          <CopyButton value={page} className="btn btn-ghost btn-sm" />
+                        </div>
+                      </div>
                     </div>
                   ))}
-                  {booking.players.length === 1 && (
-                    <p className="muted" style={{ fontSize: 13, margin: '4px 0 0' }}>
-                      Nobody else has signed up yet. Invite as many players as you like — there is no limit.
-                    </p>
-                  )}
+                  <p className="muted" style={{ fontSize: 13, margin: '4px 0 0', maxWidth: '46ch' }}>
+                    {booking.players.length === 1
+                      ? 'Nobody else has signed up yet. Invite as many players as you like — there is no limit.'
+                      : 'Each player has their own QR. Send it on, or copy their pass link — whoever arrives first can be let in on their own.'}
+                  </p>
                 </div>
               </div>
             )}
@@ -210,6 +253,9 @@ export default async function PassPage({
                 {confirmed ? `Payment verified · ${formatPeso(booking.totalCents)}` : 'Not yet valid for entry'}
               </div>
             </div>
+            <a className="btn btn-secondary btn-block" style={{ marginTop: 18 }} href={qrDownload} download>
+              Save QR as an image
+            </a>
           </aside>
         </div>
       </main>

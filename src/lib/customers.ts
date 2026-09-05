@@ -110,3 +110,33 @@ export async function customerHistory(email: string) {
     take: 100,
   });
 }
+
+/**
+ * Keep an account's saved details in step with the last booking made on it.
+ *
+ * Booking now requires an account, so the booking form is also the place people
+ * correct a mistyped number or a changed surname. Writing it back here is what
+ * makes "your details are filled in for you" true on the *next* booking rather
+ * than only on the one they just typed.
+ *
+ * Email is deliberately not writable this way: it identifies the account and
+ * changing it would silently move the account, not the booking.
+ */
+export async function saveBookingDetails(
+  customerId: string,
+  details: { name: string; mobile: string },
+): Promise<void> {
+  const name = details.name.trim();
+  const mobile = details.mobile.trim();
+  if (!name || !mobile) return;
+
+  const existing = await prisma.customer.findUnique({
+    where: { id: customerId },
+    select: { name: true, mobile: true },
+  });
+  // A no-op write would still bump updatedAt, which reads as account activity
+  // that never happened.
+  if (!existing || (existing.name === name && existing.mobile === mobile)) return;
+
+  await prisma.customer.update({ where: { id: customerId }, data: { name, mobile } });
+}

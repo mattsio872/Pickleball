@@ -14,6 +14,7 @@ export default async function SignInPage({
   const { next } = await searchParams;
   const target = safeNext(next);
   if (await currentCustomer()) redirect(target);
+  const bookingFirst = target.startsWith('/book');
 
   const settings = await getSettings();
 
@@ -26,13 +27,15 @@ export default async function SignInPage({
         </div>
         <h2 style={{ marginBottom: 6 }}>Sign in</h2>
         <p className="muted" style={{ fontSize: 13.5, marginBottom: 24 }}>
-          See everything you have booked, and have your details filled in next time.
+          {bookingFirst
+            ? 'Courts are booked to an account, so your pass and your booking history stay in one place. Signing in takes you straight back to it.'
+            : 'See everything you have booked, and have your details filled in next time.'}
         </p>
         <div style={{ background: 'var(--color-surface)', borderRadius: 14, padding: 24, boxShadow: 'var(--shadow-md)' }}>
           <CustomerAuthForm mode="signin" next={target} />
         </div>
         <p className="muted" style={{ fontSize: 12.5, marginTop: 18, textAlign: 'center' }}>
-          You do not need an account to book a court.
+          Booked before you had an account? Sign in, then add it with its reference.
         </p>
       </main>
     </>

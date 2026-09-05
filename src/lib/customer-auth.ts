@@ -14,8 +14,10 @@ import { AuthError, ValidationError } from './errors';
  * be mistakable for a staff one, and the two are checked by different code in
  * different places, so keeping them apart is cheaper than keeping them straight.
  *
- * Booking without an account stays possible. An account adds saved details and
- * a record of what you have booked; it is not a gate in front of the court.
+ * Booking goes through an account: the pass, the payment and the history all
+ * belong to somebody who can come back and find them. Bookings taken at the
+ * desk are still made for people who have no account, and older guest bookings
+ * are claimed onto an account by reference.
  */
 
 export const CUSTOMER_COOKIE = 'pl_customer';

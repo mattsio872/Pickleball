@@ -5,7 +5,7 @@ import { currentCustomer, customerBookings } from '@/lib/customer-auth';
 import { getSettings } from '@/lib/settings';
 import { formatPeso } from '@/lib/money';
 import { slotLabel } from '@/lib/time';
-import { makePassToken } from '@/lib/pass';
+import { makePassToken, qrImagePath } from '@/lib/pass';
 import { methodLabel } from '@/lib/payments';
 import { SiteHeader } from '@/components/SiteHeader';
 import { ClaimBooking, ProfilePanel, CustomerSignOut } from './MyAccountPanels';
@@ -50,9 +50,14 @@ export default async function MyBookingsPage() {
           )}
           <span className="tag tag-neutral mono">{booking.ref}</span>
           {!isPast && booking.status === 'CONFIRMED' && (
-            <Link className="btn btn-ghost" style={{ marginLeft: 'auto' }} href={`/pass/${encodeURIComponent(makePassToken(booking))}`}>
-              Open pass
-            </Link>
+            <>
+              <Link className="btn btn-ghost" style={{ marginLeft: 'auto' }} href={`/pass/${encodeURIComponent(makePassToken(booking))}`}>
+                Open pass
+              </Link>
+              <a className="btn btn-ghost" href={qrImagePath(makePassToken(booking))} download>
+                Save QR
+              </a>
+            </>
           )}
         </div>
         <div style={{ fontFamily: 'var(--font-heading)', fontSize: 17, marginBottom: 4 }}>
@@ -71,7 +76,7 @@ export default async function MyBookingsPage() {
 
   return (
     <>
-      <SiteHeader venueName={settings.venueName} city={settings.city} />
+      <SiteHeader venueName={settings.venueName} city={settings.city} customerName={customer.name} />
 
       <main className="container fade-in" style={{ padding: '32px 24px 64px', maxWidth: 820 }}>
         <div className="row" style={{ alignItems: 'baseline', marginBottom: 6 }}>

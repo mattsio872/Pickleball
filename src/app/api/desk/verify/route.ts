@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireStaff } from '@/lib/auth';
-import { verifyPassToken } from '@/lib/pass';
+import { verifyScannedToken } from '@/lib/pass';
 import { findByRefWithParty, normaliseRef } from '@/lib/booking';
 import { getSettings } from '@/lib/settings';
 import { prisma } from '@/lib/db';
@@ -32,19 +32,26 @@ export const POST = route(async (request: NextRequest) => {
   const settings = await getSettings();
 
   let ref: string;
+  // Set when a *player's* own pass was scanned rather than the booking pass, so
+  // the desk is told who is standing in front of it instead of being handed a
+  // roster to guess from.
+  let scannedPlayerId: string | null = null;
 
   if (input.token) {
-    const verification = await verifyPassToken(input.token.trim());
+    const verification = await verifyScannedToken(input.token.trim());
     if (!verification.valid) {
       const reason =
         verification.reason === 'bad_signature'
           ? 'This pass has been altered or was not issued by us. Do not admit.'
           : verification.reason === 'unknown'
-            ? 'No booking matches this pass.'
+            ? verification.kind === 'player'
+              ? 'That player is no longer on the booking.'
+              : 'No booking matches this pass.'
             : 'That QR is not a Pickle Lounge pass.';
       return NextResponse.json({ outcome: 'invalid', reason });
     }
     ref = verification.booking.ref;
+    if (verification.kind === 'player') scannedPlayerId = verification.player.id;
   } else {
     ref = normaliseRef(input.ref!);
     if (!/^PL-[A-Z0-9]{6}$/.test(ref)) {
@@ -84,6 +91,7 @@ export const POST = route(async (request: NextRequest) => {
     method: paidPayment?.method ? methodLabel(paidPayment.method) : null,
     booker: booking.customerName,
     mobile: booking.customerMobile,
+    scannedPlayerId,
     players: booking.players.map((p) => ({
       id: p.id,
       name: p.name,

@@ -16,11 +16,15 @@ password. This is the same product with those four things actually built.
 **For the customer**
 
 - Browse live availability across every court, by date and block length
+- Sign in — booking goes through an account, so the pass, the payment and the
+  history belong to somebody who can come back and find them
 - Hold a slot, pay by GCash, Maya, online bank transfer or card
-- Receive a signed QR entry pass by email
+- Receive a signed QR entry pass by email, and save it as an image for the
+  phone's photo roll
 - Share a join link so each player registers themselves — no limit on the party
-- Optionally keep an account: saved details filled in at booking, and every
-  booking in one place at `/my`. Booking as a guest still works.
+- Every player gets a QR of their own, so a party that arrives in ones and twos
+  is let in without waiting for the booker
+- Saved details filled in at booking, and every booking in one place at `/my`
 
 **For the front desk**
 
@@ -29,6 +33,9 @@ password. This is the same product with those four things actually built.
 - Release a court when a party cannot come — the slot goes back on sale
 - See the court, slot, payment status and roster — read from the booking system,
   never from the pass itself
+- Scan a player's own pass and check in that one person
+- Open any booking in full from the week grid: who booked it, what was paid, who
+  is on the roster and whether they have been in
 - Check players in and add walk-on guests up to the party limit
 
 **For the venue owner**
@@ -82,7 +89,7 @@ Likewise, without `RESEND_API_KEY` the pass email is printed to the server conso
 rather than sent, so you can read exactly what the booker would have received.
 
 ```bash
-npm test          # 87 tests
+npm test          # the full suite, against the test database
 npm run typecheck
 npm run build
 ```
@@ -159,6 +166,15 @@ pass ever issued. A tampered signature, a stolen signature from another booking,
 and a well-formed pass for a cancelled booking are three distinct outcomes at
 the desk — the last one is *valid but do not admit*, which is different from a
 forgery.
+
+Each player on the roster carries a pass of the same shape, signed over the
+booking reference **and** their own registration id, against the same
+per-booking secret. So a player pass cannot be edited into another player's, and
+revoking a booking's pass revokes its players' passes with it. Scanning one
+tells the desk which single person to admit; scanning the booking's own pass
+still opens the whole roster. Both are downloadable as a PNG from
+`/api/pass/<token>/qr.png`, which is guarded by the same signature and discloses
+nothing the holder does not already have.
 
 ### Money is integers
 
@@ -350,16 +366,18 @@ src/
   app/
     page.tsx                 Landing page
     book/                    Booking wizard
-    pass/[token]/            The booker's pass
+    pass/[token]/            The booker's pass, and every player's QR
+    pass/player/[token]/     One player's own pass
     join/[ref]/              Player self-registration
     signin/ register/        Customer sign-in and registration
     my/                      A customer's bookings and saved details
     desk/                    Staff scanner (camera + reference lookup)
     desk/bookings/           Move, release and delete bookings
+    desk/bookings/[ref]/     One booking in full, opened from the week grid
     admin/                   Owner dashboard
     admin/schedule/          The week as a grid
     api/                     Route handlers
-tests/                       87 tests, integration ones against real Postgres
+tests/                       Integration tests against real Postgres
 ```
 
 ## Seeding and staff passwords
@@ -473,13 +491,20 @@ shorter block does change what is owed, and the screen says by how much.
 
 ## Customer accounts
 
-Booking is possible with or without an account; an account adds saved details
-and a record of what has been booked. It is not a gate in front of the court.
+Booking a court requires an account. The gate is on the API, not only on the
+page: every booking made through the site belongs to somebody who can find it
+again, the pass goes to an address the account owns, and the name and number
+typed at booking are saved back to the account for next time. Bookings taken at
+the desk are unaffected, and bookings made before accounts existed are claimed
+onto one by reference.
 
-Two decisions worth knowing about:
+Three decisions worth knowing about:
 
 - **A customer session is not a staff session.** Different cookie, and the token
   carries an audience claim, so a staff token cannot be read as a customer one.
+- **The email on a booking is the account's, not the form's.** It is shown but
+  not editable at booking: a typo there would put the pass and the booking
+  history in two different places.
 - **Registering does not adopt guest bookings that share the email address.**
   The address is unverified at that point, so adopting them would let anyone
   read a stranger's history by signing up as them. A past booking is attached

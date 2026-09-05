@@ -113,7 +113,7 @@ export default async function SchedulePage({
                           return (
                             <Link
                               key={booking.ref}
-                              href={`/desk/bookings?q=${encodeURIComponent(booking.ref)}`}
+                              href={`/desk/bookings/${encodeURIComponent(booking.ref)}`}
                               className="schedule-chip"
                               data-held={booking.status === 'HELD'}
                               style={{
@@ -140,8 +140,9 @@ export default async function SchedulePage({
         </div>
 
         <p className="muted" style={{ fontSize: 12.5, marginTop: 16 }}>
-          Hover a chip for the reference, booker and party size; click one to open the booking. A booking longer than
-          an hour appears on every hour it occupies, named on the first.
+          Hover a chip for the reference, booker and party size; click one to open the booking in full — who booked it,
+          what was paid, and who is on the roster. A booking longer than an hour appears on every hour it occupies,
+          named on the first.
         </p>
       </main>
     </>

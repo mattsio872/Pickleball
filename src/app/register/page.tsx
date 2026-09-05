@@ -14,6 +14,7 @@ export default async function RegisterPage({
   const { next } = await searchParams;
   const target = safeNext(next);
   if (await currentCustomer()) redirect(target);
+  const bookingFirst = target.startsWith('/book');
 
   const settings = await getSettings();
 
@@ -26,7 +27,9 @@ export default async function RegisterPage({
         </div>
         <h2 style={{ marginBottom: 6 }}>Create an account</h2>
         <p className="muted" style={{ fontSize: 13.5, marginBottom: 24 }}>
-          Keep your bookings in one place and skip re-typing your details every time.
+          {bookingFirst
+            ? 'One step before your court: an account holds the booking, the pass and your details, so you can find them again.'
+            : 'Keep your bookings in one place and skip re-typing your details every time.'}
         </p>
         <div style={{ background: 'var(--color-surface)', borderRadius: 14, padding: 24, boxShadow: 'var(--shadow-md)' }}>
           <CustomerAuthForm mode="register" next={target} />

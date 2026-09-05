@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { prisma } from '@/lib/db';
 import { createHold, confirmBooking } from '@/lib/booking';
-import { customerHistory, listCustomers } from '@/lib/customers';
+import { customerHistory, listCustomers, saveBookingDetails } from '@/lib/customers';
 import { migrateTestDatabase, resetDatabase, seedVenue, NOW, TEST_DAY } from './helpers';
 
 let courtA: string;
@@ -135,5 +135,65 @@ describe('customer directory', () => {
     const { customers, total } = await listCustomers();
     expect(total).toBe(0);
     expect(customers).toEqual([]);
+  });
+});
+
+/**
+ * Booking now requires an account, which makes the booking form the place
+ * people correct a mistyped number — so what they type there has to reach the
+ * account, or "your details are filled in for you" is false the very next time.
+ */
+describe('details saved back to an account', () => {
+  async function account() {
+    return prisma.customer.create({
+      data: {
+        email: 'juan@example.com',
+        name: 'Juan dela Cruz',
+        mobile: '0917 555 0134',
+        passwordHash: 'x',
+      },
+    });
+  }
+
+  it('keeps the name and number from the latest booking', async () => {
+    const customer = await account();
+
+    await saveBookingDetails(customer.id, { name: 'Juan D. Cruz', mobile: '0918 222 3344' });
+
+    const after = await prisma.customer.findUniqueOrThrow({ where: { id: customer.id } });
+    expect(after.name).toBe('Juan D. Cruz');
+    expect(after.mobile).toBe('0918 222 3344');
+    expect(after.email).toBe('juan@example.com');
+  });
+
+  it('trims what it stores', async () => {
+    const customer = await account();
+    await saveBookingDetails(customer.id, { name: '  Juan D. Cruz  ', mobile: ' 0918 222 3344 ' });
+    const after = await prisma.customer.findUniqueOrThrow({ where: { id: customer.id } });
+    expect(after.name).toBe('Juan D. Cruz');
+    expect(after.mobile).toBe('0918 222 3344');
+  });
+
+  it('does not touch the account when nothing changed', async () => {
+    const customer = await account();
+
+    await saveBookingDetails(customer.id, { name: 'Juan dela Cruz', mobile: '0917 555 0134' });
+
+    const after = await prisma.customer.findUniqueOrThrow({ where: { id: customer.id } });
+    // A write that changes nothing still bumps updatedAt, which reads as
+    // account activity that never happened.
+    expect(after.updatedAt.getTime()).toBe(customer.updatedAt.getTime());
+  });
+
+  it('ignores a blank name or number rather than emptying the account', async () => {
+    const customer = await account();
+    await saveBookingDetails(customer.id, { name: '', mobile: '0918 222 3344' });
+    const after = await prisma.customer.findUniqueOrThrow({ where: { id: customer.id } });
+    expect(after.name).toBe('Juan dela Cruz');
+    expect(after.mobile).toBe('0917 555 0134');
+  });
+
+  it('says nothing about an account that is not there', async () => {
+    await expect(saveBookingDetails('no-such-customer', { name: 'X Y', mobile: '0918' })).resolves.toBeUndefined();
   });
 });

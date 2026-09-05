@@ -82,11 +82,15 @@ function dayChipLabels(dayKey: string, timezone: string, isToday: boolean) {
 
 export function BookingFlow({
   cancelledRef,
-  savedDetails,
+  account,
 }: {
   cancelledRef?: string;
-  /** A signed-in customer's saved details, so they are not re-typed. */
-  savedDetails?: { name: string; email: string; mobile: string };
+  /**
+   * The signed-in booker. Booking requires an account, so this is always
+   * present — the pass goes to this address, and the name and number here are
+   * what the account has saved.
+   */
+  account: { name: string; email: string; mobile: string };
 }) {
   const router = useRouter();
 
@@ -100,9 +104,8 @@ export function BookingFlow({
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const [name, setName] = useState(savedDetails?.name ?? '');
-  const [email, setEmail] = useState(savedDetails?.email ?? '');
-  const [mobile, setMobile] = useState(savedDetails?.mobile ?? '');
+  const [name, setName] = useState(account.name);
+  const [mobile, setMobile] = useState(account.mobile);
   const [method, setMethod] = useState<MethodId>('gcash');
 
   const [submitting, setSubmitting] = useState(false);
@@ -196,7 +199,6 @@ export function BookingFlow({
           startMinutes,
           durationMinutes: duration,
           name,
-          email,
           mobile,
         }),
       });
@@ -225,7 +227,7 @@ export function BookingFlow({
     }
   }
 
-  const detailsValid = name.trim().length >= 2 && /.+@.+\..+/.test(email) && mobile.trim().length >= 7;
+  const detailsValid = name.trim().length >= 2 && mobile.trim().length >= 7;
 
   return (
     <div className="container fade-in" style={{ padding: '32px 24px 64px' }}>
@@ -414,11 +416,10 @@ export function BookingFlow({
               to the payment provider.
             </p>
 
-            {savedDetails && (
-              <div className="banner banner-info" style={{ marginBottom: 22 }}>
-                Filled in from your account. This booking will be saved to it.
-              </div>
-            )}
+            <div className="banner banner-info" style={{ marginBottom: 22 }}>
+              Filled in from your account, and saved to it. Correcting your name or number here updates your account
+              too.
+            </div>
 
             <div className="label-caps" style={{ marginBottom: 10 }}>
               Payment method
@@ -475,17 +476,13 @@ export function BookingFlow({
               </div>
               <div className="field">
                 <label htmlFor="bk-email">Email for the QR pass</label>
-                <input
-                  id="bk-email"
-                  className="input"
-                  placeholder="you@email.com"
-                  value={email}
-                  type="email"
-                  autoComplete="email"
-                  aria-invalid={Boolean(fieldErrors.email)}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-                {fieldErrors.email && <div className="field-error">{fieldErrors.email[0]}</div>}
+                {/* Fixed to the account: the pass and the booking history have
+                    to end up in the same place, and a typo here would put them
+                    somewhere nobody can reach. */}
+                <input id="bk-email" className="input" value={account.email} type="email" readOnly disabled />
+                <div className="muted" style={{ fontSize: 11.5, marginTop: 5 }}>
+                  Your account&rsquo;s address. Change it in your account settings.
+                </div>
               </div>
             </div>
 

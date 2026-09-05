@@ -423,6 +423,7 @@ figcaption {
 .btn-ghost:active { background: color-mix(in srgb, var(--color-accent) 18%, transparent); }
 .btn-icon { width: 36px; height: 36px; padding: 0; }
 .btn-block { width: 100%; margin-top: var(--space-2); }
+.btn-sm { font-size: 12.5px; padding: 5px 9px; }
 
 /* — forms — */
 .field > label {
@@ -666,6 +667,23 @@ textarea.input { min-height: 90px; resize: vertical; }
 .site-nav a { color: inherit; text-decoration: none; font-size: 13.5px; }
 .site-nav a:hover { color: var(--color-accent); }
 
+/* The menu button exists only where the row cannot hold the links. */
+.nav-toggle {
+  display: none; align-items: center; gap: 8px; cursor: pointer;
+  background: transparent; color: inherit;
+  border: 1px solid var(--color-divider); border-radius: var(--radius-md);
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: 13px; padding: 7px 11px; margin-left: auto;
+}
+.nav-toggle-bars { display: inline-flex; flex-direction: column; justify-content: center; gap: 3px; width: 15px; }
+.nav-toggle-bars span {
+  display: block; height: 1.5px; background: currentColor; border-radius: 1px;
+  transition: transform 140ms ease, opacity 140ms ease;
+}
+.nav-toggle-bars[data-open='true'] span:nth-child(1) { transform: translateY(4.5px) rotate(45deg); }
+.nav-toggle-bars[data-open='true'] span:nth-child(2) { opacity: 0; }
+.nav-toggle-bars[data-open='true'] span:nth-child(3) { transform: translateY(-4.5px) rotate(-45deg); }
+
 /* — chips: the day, court, time and duration pickers — */
 .chip {
   cursor: pointer; font-family: var(--font-body); text-align: center;
@@ -787,11 +805,27 @@ textarea.input { min-height: 90px; resize: vertical; }
 }
 
 /* — roster — */
+/* A player's own pass: their QR small enough to sit in a list, large enough to
+   scan straight off the screen at the desk. */
+.player-pass {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--color-surface); border-radius: 10px; padding: 12px 14px; font-size: 13.5px;
+}
+.player-pass-qr {
+  flex: 0 0 auto; display: block; width: 72px; height: 72px;
+  background: var(--color-neutral-100); border-radius: 8px; padding: 6px;
+}
+.player-pass-qr:hover { box-shadow: 0 0 0 1.5px var(--color-accent); }
+.player-pass-qr svg { width: 100%; height: 100%; display: block; }
+.player-pass-body { flex: 1 1 auto; min-width: 0; }
+.player-pass-body .spread > span:first-child { overflow-wrap: anywhere; }
+
 .roster-row {
   display: flex; justify-content: space-between; align-items: center; gap: 12px;
   background: var(--color-surface); border-radius: 8px; padding: 11px 13px; font-size: 13.5px;
 }
 .roster-row[data-checked='true'] { background: var(--color-accent-100); }
+.roster-row[data-scanned='true'] { box-shadow: 0 0 0 1.5px var(--color-accent); }
 
 /* — the weekly schedule grid — */
 .schedule-grid { width: 100%; border-collapse: separate; border-spacing: 2px; font-size: 12px; }
@@ -858,12 +892,25 @@ body { -webkit-font-smoothing: antialiased; }
   h1 { font-size: 34px; }
   h2 { font-size: 25px; }
   .container { padding-inline: 18px; }
-  .site-header .inner { padding: 12px 18px; gap: 14px; flex-wrap: wrap; }
+  .site-header .inner { padding: 12px 18px; gap: 12px; flex-wrap: wrap; }
   .site-nav { gap: 12px; flex-wrap: wrap; }
-  /* The marketing links fold away on a narrow screen, but never a button —
-     hiding every anchor took "Book a court" with it, and the staff nav
-     entirely, on the tablet the front desk is most likely to be holding. */
+  /* Narrow enough that the links cannot sit in the bar: they move into the
+     menu behind the button rather than out of the site altogether, which is
+     what hiding them used to amount to. The staff nav is left alone — the desk
+     is on a tablet with room for its two links. */
+  .nav-toggle { display: inline-flex; }
+  /* The city is decoration; on a 360px bar it costs the menu button its room. */
+  .brand span { display: none; }
   .site-nav-public a:not(.btn) { display: none; }
+  .site-nav-public[data-open='true'] {
+    flex-basis: 100%; flex-direction: column; align-items: stretch; gap: 0;
+    margin-bottom: 6px;
+  }
+  .site-nav-public[data-open='true'] a:not(.btn) {
+    display: block; font-size: 15px; padding: 12px 2px;
+    border-bottom: 1px solid var(--color-divider);
+  }
+  .site-nav-public[data-open='true'] .btn { margin-top: 12px; }
   .site-nav-staff { font-size: 13px; row-gap: 8px; }
   .summary { position: static; }
   .flow-grid { gap: 26px; }

@@ -2,12 +2,13 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { currentStaff } from '@/lib/auth';
 import { getSettings } from '@/lib/settings';
-import { verifyPassToken } from '@/lib/pass';
+import { verifyScannedToken } from '@/lib/pass';
 import { findByRefWithParty } from '@/lib/booking';
 import { formatPeso } from '@/lib/money';
 import { slotLabel } from '@/lib/time';
 import { methodLabel } from '@/lib/payments';
 import { StaffBar } from '@/components/StaffBar';
+import { PlayerCheckIn } from './PlayerCheckIn';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,17 +26,21 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
   }
 
   const settings = await getSettings();
-  const verification = t ? await verifyPassToken(t) : null;
+  const verification = t ? await verifyScannedToken(t) : null;
   const booking = verification?.valid ? await findByRefWithParty(verification.booking.ref) : null;
   const paid = booking?.payments.find((p) => p.status === 'PAID');
   const admit = booking?.status === 'CONFIRMED' && booking.endsAt > new Date();
+  // A player's own pass names the one person to admit; a booking pass covers
+  // the whole party and sends the desk to the roster.
+  const scanned = verification?.valid && verification.kind === 'player' ? verification.player : null;
+  const player = scanned ? (booking?.players.find((p) => p.id === scanned.id) ?? null) : null;
 
   return (
     <>
       <StaffBar venueName={settings.venueName} staffName={session.name} role={session.role} />
 
       <main className="container fade-in" style={{ padding: '32px 24px 64px', maxWidth: 640 }}>
-        <h2 style={{ marginBottom: 20 }}>Pass check</h2>
+        <h2 style={{ marginBottom: 20 }}>{player ? 'Player pass check' : 'Pass check'}</h2>
 
         {!verification?.valid || !booking ? (
           <div style={{ borderRadius: 14, padding: 26, background: 'var(--color-accent-100)', boxShadow: 'var(--shadow-sm)' }}>
@@ -47,6 +52,8 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
                 ? 'No pass supplied.'
                 : verification && !verification.valid && verification.reason === 'bad_signature'
                   ? 'This pass has been altered or was not issued by us.'
+                  : verification && !verification.valid && verification.kind === 'player' && verification.reason === 'unknown'
+                  ? 'That player is no longer on this booking\u2019s roster.'
                   : 'No booking matches this pass.'}
             </h4>
             <p style={{ fontSize: 13.5, color: 'var(--color-neutral-700)', margin: 0 }}>
@@ -67,9 +74,19 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
                 <span className="tag tag-outline">Unpaid</span>
               )}
             </div>
-            <div className="mono" style={{ fontSize: 22, letterSpacing: '0.06em', marginBottom: 18 }}>
-              {booking.ref}
-            </div>
+            {player ? (
+              <>
+                <h3 style={{ margin: '0 0 4px' }}>{player.name}</h3>
+                <div className="mono" style={{ fontSize: 13, letterSpacing: '0.06em', marginBottom: 18, color: 'var(--color-neutral-700)' }}>
+                  {booking.ref} · {player.isBooker ? 'booker' : 'player'}
+                  {player.checkedInAt ? ' · already checked in' : ''}
+                </div>
+              </>
+            ) : (
+              <div className="mono" style={{ fontSize: 22, letterSpacing: '0.06em', marginBottom: 18 }}>
+                {booking.ref}
+              </div>
+            )}
             <div className="stack" style={{ gap: 12, fontSize: 14 }}>
               {[
                 ['Court', `Court ${booking.court.code} · ${booking.court.name}`],
@@ -88,9 +105,23 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
                 </div>
               ))}
             </div>
-            <Link className="btn btn-primary btn-block" style={{ padding: 11, marginTop: 20 }} href="/desk">
-              Open the roster to check players in
-            </Link>
+            {player ? (
+              <>
+                <PlayerCheckIn
+                  playerId={player.id}
+                  playerName={player.name}
+                  checkedIn={Boolean(player.checkedInAt)}
+                  disabled={!admit}
+                />
+                <Link className="btn btn-ghost btn-block" style={{ padding: 9 }} href="/desk">
+                  Open the whole roster
+                </Link>
+              </>
+            ) : (
+              <Link className="btn btn-primary btn-block" style={{ padding: 11, marginTop: 20 }} href="/desk">
+                Open the roster to check players in
+              </Link>
+            )}
           </div>
         )}
       </main>

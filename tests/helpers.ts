@@ -22,8 +22,11 @@ export function migrateTestDatabase() {
 }
 
 export async function resetDatabase() {
+  // Customers are in the list because a leftover account is not inert: it holds
+  // an email address, and the next test to register that address fails on the
+  // unique constraint rather than on anything it meant to check.
   await prisma.$executeRawUnsafe(
-    'TRUNCATE bookings, courts, closures, payments, player_registrations, webhook_events, staff_users, settings RESTART IDENTITY CASCADE',
+    'TRUNCATE bookings, courts, closures, customers, payments, player_registrations, webhook_events, staff_users, settings RESTART IDENTITY CASCADE',
   );
 }
 

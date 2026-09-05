@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api, ApiRequestError } from '@/lib/client';
 
@@ -10,12 +11,13 @@ export function JoinForm({ bookingRef }: { bookingRef: string }) {
   const [contact, setContact] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
+  const [pass, setPass] = useState<string | null>(null);
 
-  if (done) {
+  if (pass) {
     return (
       <div className="banner banner-ok">
-        You&rsquo;re on the roster. Turn up with the group — the booker&rsquo;s QR gets you all in.
+        You&rsquo;re on the roster, and you have a pass of your own — taking you to it now. If nothing
+        happens, <Link href={pass}>open your pass</Link>.
       </div>
     );
   }
@@ -25,12 +27,12 @@ export function JoinForm({ bookingRef }: { bookingRef: string }) {
     setBusy(true);
     setError(null);
     try {
-      await api(`/api/join/${encodeURIComponent(bookingRef)}`, {
+      const created = await api<{ passPath: string }>(`/api/join/${encodeURIComponent(bookingRef)}`, {
         method: 'POST',
         body: JSON.stringify({ name, contact }),
       });
-      setDone(true);
-      router.refresh();
+      setPass(created.passPath);
+      router.push(created.passPath);
     } catch (e) {
       setError(e instanceof ApiRequestError ? e.message : 'Could not add you to the roster.');
     } finally {

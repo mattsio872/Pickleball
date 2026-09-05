@@ -39,8 +39,8 @@ export default async function JoinPage({ params }: { params: Promise<{ ref: stri
           {booking.customerName.split(' ')[0]} booked a court. Add your name.
         </h2>
         <p className="muted" style={{ fontSize: 14, marginBottom: 26, maxWidth: '52ch' }}>
-          Registering here puts you on the desk&rsquo;s roster, so you can be checked in when the booker&rsquo;s pass is
-          scanned. No payment is needed — the court is already paid for.
+          Registering here puts you on the desk&rsquo;s roster and gives you a QR of your own, so you can be let in
+          whenever you arrive. No payment is needed — the court is already paid for.
         </p>
 
         <div className="stack" style={{ gap: 12, fontSize: 14, maxWidth: 420, marginBottom: 30 }}>

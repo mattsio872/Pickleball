@@ -32,6 +32,8 @@ type VerifyResult =
       booker: string;
       mobile: string;
       players: Player[];
+      /** Set when a player's own pass was scanned, rather than the booking's. */
+      scannedPlayerId: string | null;
     };
 
 const SCAN_INTERVAL_MS = 250;
@@ -300,15 +302,24 @@ export function DeskScanner() {
               ))}
             </div>
 
+            {result.scannedPlayerId && (
+              <div className="banner banner-ok" style={{ marginBottom: 16 }}>
+                Player pass scanned:{' '}
+                <strong>{result.players.find((p) => p.id === result.scannedPlayerId)?.name ?? 'this player'}</strong>.
+                Check them in below — the rest of the party can come later on their own passes.
+              </div>
+            )}
+
             <div className="label-caps" style={{ marginBottom: 10 }}>
               Party roster — {checkedCount} of {result.players.length} checked in
             </div>
             <div className="stack" style={{ gap: 8 }}>
               {result.players.map((p) => (
-                <div key={p.id} className="roster-row" data-checked={p.checkedIn}>
+                <div key={p.id} className="roster-row" data-checked={p.checkedIn} data-scanned={p.id === result.scannedPlayerId}>
                   <span>
                     {p.name}
                     {p.isBooker ? ' (booker)' : ''}
+                    {p.id === result.scannedPlayerId ? ' · scanned' : ''}
                   </span>
                   <button
                     className={p.checkedIn ? 'btn btn-ghost' : 'btn btn-secondary'}
@@ -363,6 +374,8 @@ function extractToken(scanned: string): string | null {
     const url = new URL(scanned);
     return url.searchParams.get('t');
   } catch {
-    return /^PL-[A-Z0-9]{6}\.[A-Za-z0-9_-]+$/.test(scanned.trim()) ? scanned.trim() : null;
+    // Two shapes: a booking pass (ref.signature) and a player pass
+    // (ref.playerId.signature).
+    return /^PL-[A-Z0-9]{6}(?:\.[A-Za-z0-9_-]+){1,2}$/.test(scanned.trim()) ? scanned.trim() : null;
   }
 }

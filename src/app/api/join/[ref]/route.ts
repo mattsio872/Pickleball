@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { findByRefWithParty } from '@/lib/booking';
+import { makePlayerToken } from '@/lib/pass';
 import { route } from '@/lib/api';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 
@@ -37,5 +38,9 @@ export const POST = route(async (request: NextRequest, context: { params: Promis
     data: { bookingId: booking.id, name, contact: input.contact?.trim() || null },
   });
 
-  return NextResponse.json({ id: player.id, name: player.name }, { status: 201 });
+  // The player leaves with their own pass rather than a promise that the
+  // booker will turn up holding one.
+  const passPath = `/pass/player/${encodeURIComponent(makePlayerToken(booking, player))}`;
+
+  return NextResponse.json({ id: player.id, name: player.name, passPath }, { status: 201 });
 });
