@@ -6,6 +6,7 @@ import { formatPeso } from '@/lib/money';
 import { timeLabel } from '@/lib/time';
 import { SiteHeader } from '@/components/SiteHeader';
 import { CourtMotif, CourtThumb } from '@/components/CourtMotif';
+import { CourtPlan } from '@/components/CourtPlan';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,12 +98,15 @@ export default async function HomePage() {
               </span>
             </div>
           </div>
-          <CourtMotif
-            height={380}
-            showHint={!settings.heroImageUrl}
-            imageUrl={settings.heroImageUrl || undefined}
-            alt={`Inside ${settings.venueName}`}
-          />
+          {settings.heroImageUrl ? (
+            <CourtMotif height={380} imageUrl={settings.heroImageUrl} alt={`Inside ${settings.venueName}`} />
+          ) : (
+            <CourtPlan
+              courts={courts.length}
+              height={380}
+              hint="[ add a photo in Venue settings ]"
+            />
+          )}
         </section>
 
         <section className="stat-band">

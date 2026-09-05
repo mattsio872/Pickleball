@@ -11,12 +11,10 @@
  */
 export function CourtMotif({
   height,
-  showHint = false,
   imageUrl,
   alt,
 }: {
   height: number;
-  showHint?: boolean;
   imageUrl?: string;
   alt?: string;
 }) {
@@ -53,21 +51,6 @@ export function CourtMotif({
           opacity: 0.95,
         }}
       />
-      {showHint && (
-        <div
-          className="mono"
-          style={{
-            position: 'absolute',
-            left: 32,
-            bottom: 30,
-            fontSize: 10.5,
-            letterSpacing: '0.1em',
-            color: 'var(--color-neutral-700)',
-          }}
-        >
-          [ drop a court photo here — motif shows meanwhile ]
-        </div>
-      )}
     </div>
   );
 }

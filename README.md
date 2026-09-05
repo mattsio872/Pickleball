@@ -377,6 +377,10 @@ src/
     admin/                   Owner dashboard
     admin/schedule/          The week as a grid
     api/                     Route handlers
+  components/
+    CourtPlan.tsx            The venue from above, drawn from the court count
+    BookingFlow.tsx          The two-step booking wizard
+    SiteHeader.tsx           The public header, and its menu on a phone
 tests/                       Integration tests against real Postgres
 ```
 
@@ -516,7 +520,12 @@ Three decisions worth knowing about:
 There is no image upload. Each court has an `imageUrl`, and the venue has a
 `heroImageUrl`, both editable in **Admin → Courts / Venue settings**. Paste any
 public image URL — a CDN, an object store, wherever the venue keeps its
-photographs — and it appears immediately. Leave one blank and the design's
+photographs — and it appears immediately.
+
+Until a hero photograph is set, the front page shows a plan of the venue —
+every court from above, drawn in `CourtPlan.tsx` from the court count in the
+database, so the picture and the headline cannot disagree about how many courts
+there are. Leave one blank and the design's
 generated artwork shows instead, so the site never has a broken image or an
 empty grey box.
 
