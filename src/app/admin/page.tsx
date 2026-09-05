@@ -106,9 +106,14 @@ export default async function AdminPage() {
           Everything here takes effect on the public site immediately.
         </p>
 
-        <Link className="btn btn-secondary" style={{ marginBottom: 28 }} href="/admin/schedule">
-          Open the weekly schedule
-        </Link>
+        <div className="row" style={{ marginBottom: 28 }}>
+          <Link className="btn btn-secondary" href="/admin/schedule">
+            Open the weekly schedule
+          </Link>
+          <Link className="btn btn-secondary" href="/desk/bookings">
+            Manage bookings
+          </Link>
+        </div>
 
         {(!paymentsLive() || !emailLive()) && (
           <div className="banner banner-warn" style={{ marginBottom: 28 }}>

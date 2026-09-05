@@ -29,6 +29,7 @@ export function StaffBar({
         </Link>
         <nav className="site-nav site-nav-staff">
           <Link href="/desk">Front desk</Link>
+          <Link href="/desk/bookings">Bookings</Link>
           <Link href="/admin/schedule">Week</Link>
           {role === 'ADMIN' && <Link href="/admin">Admin</Link>}
           <Link href="/account">{staffName}</Link>

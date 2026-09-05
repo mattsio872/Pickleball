@@ -111,8 +111,9 @@ export default async function SchedulePage({
                         {cell.bookings.map((booking) => {
                           const index = schedule.courts.findIndex((c) => c.id === booking.courtId);
                           return (
-                            <span
+                            <Link
                               key={booking.ref}
+                              href={`/desk/bookings?q=${encodeURIComponent(booking.ref)}`}
                               className="schedule-chip"
                               data-held={booking.status === 'HELD'}
                               style={{
@@ -126,7 +127,7 @@ export default async function SchedulePage({
                               {booking.isStart && (
                                 <span className="schedule-who"> {booking.customerName.split(' ')[0]}</span>
                               )}
-                            </span>
+                            </Link>
                           );
                         })}
                       </td>
@@ -139,8 +140,8 @@ export default async function SchedulePage({
         </div>
 
         <p className="muted" style={{ fontSize: 12.5, marginTop: 16 }}>
-          Hover a chip for the reference, booker and party size. A booking longer than an hour appears on every hour it
-          occupies, named on the first.
+          Hover a chip for the reference, booker and party size; click one to open the booking. A booking longer than
+          an hour appears on every hour it occupies, named on the first.
         </p>
       </main>
     </>

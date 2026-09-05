@@ -25,6 +25,8 @@ password. This is the same product with those four things actually built.
 **For the front desk**
 
 - Sign in, scan an arriving pass with the device camera, or key the reference in
+- Move a booking to another court or time, or correct the booker's details
+- Release a court when a party cannot come — the slot goes back on sale
 - See the court, slot, payment status and roster — read from the booking system,
   never from the pass itself
 - Check players in and add walk-on guests up to the party limit
@@ -38,6 +40,7 @@ password. This is the same product with those four things actually built.
 - Add and remove staff accounts, change their role, reset a forgotten password
 - Browse everyone who has booked, with their history, contact details and spend
 - See the whole week as a grid at `/admin/schedule` — every court, every hour
+- Delete a booking outright (admins only)
 - Paste a photo URL per court and for the hero; the generated artwork shows
   wherever one is blank
 
@@ -335,6 +338,7 @@ src/
     staff.ts                 Staff accounts, and the lock-yourself-out rules
     customers.ts             The customer directory, aggregated from bookings
     customer-auth.ts         Customer accounts, sessions and booking claims
+    booking-admin.ts         Staff edits: move, release, restore, delete
     schedule.ts              The weekly grid, built from the same bookings
     booking.ts               Holds, confirmation, cancellation
     checkout.ts              Booking ↔ payment orchestration, idempotency
@@ -351,6 +355,7 @@ src/
     signin/ register/        Customer sign-in and registration
     my/                      A customer's bookings and saved details
     desk/                    Staff scanner (camera + reference lookup)
+    desk/bookings/           Move, release and delete bookings
     admin/                   Owner dashboard
     admin/schedule/          The week as a grid
     api/                     Route handlers
@@ -440,6 +445,31 @@ chat, an issue, a screenshot or a commit. If one is exposed, reset the role's
 password in the Neon console (**Roles → Reset password**), then update
 `DATABASE_URL` and `DIRECT_URL` in Vercel and redeploy. The old string stops
 working immediately.
+
+## Changing a booking after the fact
+
+`/desk/bookings` — reachable by any signed-in staff member, and from a chip on
+the weekly schedule. Three actions, deliberately kept distinct because their
+consequences differ:
+
+| | What it does | Who |
+| --- | --- | --- |
+| **Move** | Another court, date, time or length; or fix the booker's details. The reference and the pass survive, and a confirmed party is emailed an updated pass. | Any staff |
+| **Release** | Takes the court off the booking and puts the slot back on sale. The record and its payment stay. | Any staff |
+| **Delete** | Removes the row. | Admins |
+
+Two rules worth knowing:
+
+- **Releasing does not refund.** The venue takes money through PayMongo, so
+  giving it back happens there. Releasing a paid booking says so, and names the
+  amount.
+- **Deleting a paid booking is refused** unless explicitly forced, because the
+  payment record goes with it and the venue then has no proof of what it took.
+  Release keeps the record; that is almost always what was wanted.
+
+Moving reprices at the rate captured **when the booking was made**, so a later
+rate rise never silently re-bills somebody whose slot merely moved. A longer or
+shorter block does change what is owed, and the screen says by how much.
 
 ## Customer accounts
 
