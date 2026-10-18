@@ -4,7 +4,7 @@ import { createHold, confirmBooking, generateRef, normaliseRef } from '@/lib/boo
 import { getDayAvailability, releaseExpiredHolds, checkSlot } from '@/lib/availability';
 import { SlotTakenError, ValidationError } from '@/lib/errors';
 import { venueInstant, addMinutes } from '@/lib/time';
-import { migrateTestDatabase, resetDatabase, seedVenue, NOW, TEST_DAY } from './helpers';
+import { migrateTestDatabase, resetDatabase, seedVenue, testDayAt, NOW, TEST_DAY } from './helpers';
 
 const MANILA = 'Asia/Manila';
 
@@ -52,8 +52,8 @@ describe('createHold', () => {
     );
 
     expect(booking.status).toBe('HELD');
-    expect(booking.startsAt.toISOString()).toBe('2026-09-11T11:00:00.000Z'); // 7PM Manila
-    expect(booking.endsAt.toISOString()).toBe('2026-09-11T13:00:00.000Z');
+    expect(booking.startsAt.toISOString()).toBe(testDayAt(19).toISOString()); // 7PM Manila
+    expect(booking.endsAt.toISOString()).toBe(testDayAt(21).toISOString());
     expect(booking.totalCents).toBe(130000);
     expect(booking.hourlyRateCents).toBe(65000);
     expect(booking.holdExpiresAt).not.toBeNull();
@@ -107,7 +107,7 @@ describe('createHold', () => {
   });
 
   it('rejects a slot in the past', async () => {
-    const later = new Date('2026-09-11T13:00:00.000Z'); // 9PM Manila, after a 7PM slot
+    const later = testDayAt(21); // 9PM Manila, after a 7PM slot
     await expect(
       createHold({ courtId: courtA.id, dayKey: TEST_DAY, startMinutes: 19 * 60, durationMinutes: 60, ...customer }, later),
     ).rejects.toThrow(ValidationError);
@@ -293,7 +293,7 @@ describe('availability', () => {
   });
 
   it('marks slots already past', async () => {
-    const evening = new Date('2026-09-11T11:30:00.000Z'); // 7:30PM Manila
+    const evening = testDayAt(19, 30);
     const day = await getDayAvailability({ dayKey: TEST_DAY, durationMinutes: 60, now: evening });
     const court = day.courts[0];
     expect(court.slots.find((s) => s.startMinutes === 19 * 60)!.reason).toBe('past');

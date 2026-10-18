@@ -34,7 +34,8 @@ export default async function AccountPage() {
 
         {session.role === 'ADMIN' && (
           <p className="muted" style={{ fontSize: 13, marginTop: 24 }}>
-            To add or remove staff, or reset somebody else&rsquo;s password, go to <Link href="/admin">Admin</Link>.
+            To add or remove staff, or reset somebody else&rsquo;s password, go to{' '}
+            <Link href="/admin#staff">Venue settings</Link>.
           </p>
         )}
       </main>

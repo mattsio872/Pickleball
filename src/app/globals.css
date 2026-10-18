@@ -666,6 +666,21 @@ textarea.input { min-height: 90px; resize: vertical; }
 .site-nav { display: flex; align-items: center; gap: 22px; }
 .site-nav a { color: inherit; text-decoration: none; font-size: 13.5px; }
 .site-nav a:hover { color: var(--color-accent); }
+/* The page you are on, so a staff screen says where it is. */
+.site-nav a[aria-current='page'] { color: var(--color-accent); }
+/* The signed-in person, set apart from the sections so a name like
+   "Venue Admin" cannot be mistaken for one of them. */
+.staff-who {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding-left: 16px; margin-left: 4px;
+  border-left: 1px solid var(--color-divider);
+}
+.staff-who a { color: var(--color-neutral-600); }
+
+/* — admin: the contents line for a page with seven sections — */
+.admin-jump { gap: 14px; font-size: 13px; }
+.admin-jump a { color: var(--color-neutral-700); text-decoration: none; }
+.admin-jump a:hover { color: var(--color-accent); }
 
 /* The menu button exists only where the row cannot hold the links. */
 .nav-toggle {
@@ -908,8 +923,10 @@ body { -webkit-font-smoothing: antialiased; }
      what hiding them used to amount to. The staff nav is left alone — the desk
      is on a tablet with room for its two links. */
   .nav-toggle { display: inline-flex; }
-  /* The city is decoration; on a 360px bar it costs the menu button its room. */
-  .brand span { display: none; }
+  /* The city is decoration; on a 360px bar it costs the menu button its room.
+     The staff bar keeps its suffix — "· staff" is the one thing telling the
+     person holding the tablet which side of the site they are on. */
+  .brand:not(.brand-staff) span { display: none; }
   .site-nav-public a:not(.btn) { display: none; }
   .site-nav-public[data-open='true'] {
     flex-basis: 100%; flex-direction: column; align-items: stretch; gap: 0;

@@ -24,8 +24,9 @@ export default async function AdminPage() {
         <StaffBar venueName="Pickle Lounge" staffName={session.name} role={session.role} />
         <main className="container" style={{ padding: '48px 24px' }}>
           <div className="banner banner-warn">
-            The admin area is limited to venue admins. You&rsquo;re signed in as staff — the{' '}
-            <Link href="/desk">front desk</Link> is where you want to be.
+            Venue settings are limited to admins. You&rsquo;re signed in as front-desk staff, which covers the{' '}
+            <Link href="/desk">scanner</Link>, <Link href="/desk/bookings">bookings</Link> and the{' '}
+            <Link href="/admin/schedule">schedule</Link> — ask an admin if you need more.
           </div>
         </main>
       </>
@@ -84,8 +85,8 @@ export default async function AdminPage() {
     sortOrder: c.sortOrder,
   }));
 
-  const section = (title: string, note: string, body: React.ReactNode) => (
-    <section style={{ marginBottom: 44 }}>
+  const section = (id: string, title: string, note: string, body: React.ReactNode) => (
+    <section id={id} style={{ marginBottom: 44, scrollMarginTop: 80 }}>
       <h4 style={{ marginBottom: 4 }}>{title}</h4>
       <p className="muted" style={{ fontSize: 13, marginBottom: 18 }}>
         {note}
@@ -101,19 +102,37 @@ export default async function AdminPage() {
       <StaffBar venueName={settings.venueName} staffName={session.name} role={session.role} />
 
       <main className="container fade-in" style={{ padding: '32px 24px 64px' }}>
-        <h2 style={{ marginBottom: 6 }}>Admin</h2>
+        <h2 style={{ marginBottom: 6 }}>Venue settings</h2>
         <p className="muted" style={{ fontSize: 13.5, marginBottom: 20 }}>
-          Everything here takes effect on the public site immediately.
+          Rates, courts, closures, staff and customers. Everything here takes effect on the public site immediately —
+          there is no separate publish step.
         </p>
 
-        <div className="row" style={{ marginBottom: 28 }}>
+        <div className="row" style={{ marginBottom: 14 }}>
           <Link className="btn btn-secondary" href="/admin/schedule">
-            Open the weekly schedule
+            Open the schedule
           </Link>
           <Link className="btn btn-secondary" href="/desk/bookings">
             Manage bookings
           </Link>
         </div>
+
+        <nav className="row admin-jump" aria-label="Sections on this page" style={{ marginBottom: 28 }}>
+          <span className="label-caps">On this page</span>
+          {[
+            ['#upcoming', 'Upcoming'],
+            ['#activity', 'Last 24 hours'],
+            ['#venue', 'Venue settings'],
+            ['#courts', 'Courts'],
+            ['#closures', 'Closures'],
+            ['#staff', 'Staff'],
+            ['#customers', 'Customers'],
+          ].map(([href, label]) => (
+            <a key={href} href={href}>
+              {label}
+            </a>
+          ))}
+        </nav>
 
         {(!paymentsLive() || !emailLive()) && (
           <div className="banner banner-warn" style={{ marginBottom: 28 }}>
@@ -138,6 +157,7 @@ export default async function AdminPage() {
         </div>
 
         {section(
+          'upcoming',
           'Upcoming bookings',
           'Confirmed and still ahead of us.',
           upcoming.length === 0 ? (
@@ -177,6 +197,7 @@ export default async function AdminPage() {
         )}
 
         {section(
+          'activity',
           'Last 24 hours',
           'Every booking attempt, whatever became of it — useful when a customer says their payment vanished.',
           recent.length === 0 ? (
@@ -220,28 +241,34 @@ export default async function AdminPage() {
           ),
         )}
 
-        {section('Venue settings', 'Rate, opening hours and booking rules.', (
+        {section('venue', 'Venue settings', 'Rate, opening hours and booking rules.', (
           <SettingsPanel initial={toPublicSettings(settings)} />
         ))}
 
-        {section('Courts', 'Photos show on the site as soon as you paste a URL; leave one blank for the generated artwork. Retiring a court hides it from booking; existing bookings are protected.', (
+        {section('courts', 'Courts', 'Photos show on the site as soon as you paste a URL; leave one blank for the generated artwork. Retiring a court hides it from booking; existing bookings are protected.', (
           <CourtsPanel initial={courtsPlain} />
         ))}
 
-        {section('Closures', 'Maintenance windows and holidays. Slots inside a closure stop being offered.', (
+        {section('closures', 'Closures', 'Maintenance windows and holidays. Slots inside a closure stop being offered.', (
           <ClosuresPanel courts={courtsPlain} closures={closures} />
         ))}
 
         {section(
+          'staff',
           'Staff accounts',
           'Who can reach the front desk and this dashboard. Everyone can change their own password under Your account.',
-          <StaffPanel initial={staff} currentUserId={session.userId} />,
+          <StaffPanel initial={staff} currentUserId={session.userId} timezone={settings.timezone} />,
         )}
 
         {section(
+          'customers',
           'Customers',
-          'Everyone who has booked, grouped by the email they booked with. Read-only — customers do not have logins.',
-          <CustomersPanel initial={customerList.customers} initialTotal={customerList.total} />,
+          'Everyone who has booked, grouped by the email they booked with — people the desk booked in as well as people with accounts. Read-only here; open a customer to see every booking they have made.',
+          <CustomersPanel
+            initial={customerList.customers}
+            initialTotal={customerList.total}
+            timezone={settings.timezone}
+          />,
         )}
       </main>
     </>

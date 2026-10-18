@@ -148,7 +148,9 @@ export default async function PassPage({
 
             {confirmed && (
               <div style={{ marginTop: 34 }}>
-                <h4 style={{ marginBottom: 6 }}>Your players check themselves in</h4>
+                <h4 id="players" style={{ marginBottom: 6, scrollMarginTop: 90 }}>
+                  Your players check themselves in
+                </h4>
                 <p className="muted" style={{ fontSize: 13, marginBottom: 14, maxWidth: '46ch' }}>
                   Send this link to your group. Each player registers their own name on it and gets a QR of their own,
                   so anyone can be let in without waiting for you.
@@ -203,7 +205,7 @@ export default async function PassPage({
                   ))}
                   <p className="muted" style={{ fontSize: 13, margin: '4px 0 0', maxWidth: '46ch' }}>
                     {booking.players.length === 1
-                      ? 'Nobody else has signed up yet. Invite as many players as you like — there is no limit.'
+                      ? 'Nobody else has signed up yet. Invite whoever you like — the roster is not capped, and the court is yours for the hour either way.'
                       : 'Each player has their own QR. Send it on, or copy their pass link — whoever arrives first can be let in on their own.'}
                   </p>
                 </div>

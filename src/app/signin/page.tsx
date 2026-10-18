@@ -34,9 +34,16 @@ export default async function SignInPage({
         <div style={{ background: 'var(--color-surface)', borderRadius: 14, padding: 24, boxShadow: 'var(--shadow-md)' }}>
           <CustomerAuthForm mode="signin" next={target} />
         </div>
-        <p className="muted" style={{ fontSize: 12.5, marginTop: 18, textAlign: 'center' }}>
-          Booked before you had an account? Sign in, then add it with its reference.
-        </p>
+        <div className="muted" style={{ fontSize: 12.5, marginTop: 18, textAlign: 'center', lineHeight: 1.6 }}>
+          <p style={{ margin: 0 }}>Booked before you had an account? Sign in, then add it with its reference.</p>
+          {/* There is no self-service reset — email delivery is not something
+              this site can assume — so the way out is stated rather than left
+              to be discovered. */}
+          <p style={{ margin: '8px 0 0' }}>
+            Forgotten your password? Message the desk on Viber at {settings.contactViber}. Your pass link and QR keep
+            working either way.
+          </p>
+        </div>
       </main>
     </>
   );

@@ -4,6 +4,7 @@ import { createHold, confirmBooking } from '@/lib/booking';
 import { getWeekSchedule, weekStartOf } from '@/lib/schedule';
 import { venueInstant } from '@/lib/time';
 import { migrateTestDatabase, resetDatabase, seedVenue, NOW, TEST_DAY } from './helpers';
+import { shiftDayKey } from '@/lib/time';
 
 const MANILA = 'Asia/Manila';
 let courtA: string;
@@ -50,8 +51,10 @@ describe('the weekly grid', () => {
   it('covers seven days and every opening hour', async () => {
     const week = await getWeekSchedule({ weekOf: TEST_DAY, now: NOW });
     expect(week.days).toHaveLength(7);
-    expect(week.days[0].dayKey).toBe('2026-09-07');
-    expect(week.days[6].dayKey).toBe('2026-09-13');
+    // Monday of the test day's own week, through the Sunday after it.
+    const monday = weekStartOf(TEST_DAY, MANILA);
+    expect(week.days[0].dayKey).toBe(monday);
+    expect(week.days[6].dayKey).toBe(shiftDayKey(monday, 6, MANILA));
     // Open 6, close 23 → 17 bookable hours.
     expect(week.hours).toHaveLength(17);
     expect(week.days.every((d) => d.cells.length === 17)).toBe(true);
@@ -132,13 +135,14 @@ describe('the weekly grid', () => {
 
   it('navigates to the weeks either side', async () => {
     const week = await getWeekSchedule({ weekOf: TEST_DAY, now: NOW });
-    expect(week.previousWeek).toBe('2026-08-31');
-    expect(week.nextWeek).toBe('2026-09-14');
+    const monday = weekStartOf(TEST_DAY, MANILA);
+    expect(week.previousWeek).toBe(shiftDayKey(monday, -7, MANILA));
+    expect(week.nextWeek).toBe(shiftDayKey(monday, 7, MANILA));
   });
 
   it('leaves a neighbouring week alone', async () => {
     await book(courtA, 19);
-    const next = await getWeekSchedule({ weekOf: '2026-09-14', now: NOW });
+    const next = await getWeekSchedule({ weekOf: shiftDayKey(weekStartOf(TEST_DAY, MANILA), 7, MANILA), now: NOW });
     expect(next.totals.bookings).toBe(0);
   });
 

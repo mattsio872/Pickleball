@@ -31,6 +31,8 @@ export default async function MyBookingsPage() {
 
   const card = (booking: (typeof bookings)[number], isPast: boolean) => {
     const paid = booking.payments[0];
+    const holdLive =
+      booking.status === 'HELD' && Boolean(booking.holdExpiresAt && booking.holdExpiresAt > now);
     return (
       <div
         key={booking.id}
@@ -45,8 +47,13 @@ export default async function MyBookingsPage() {
         <div className="row" style={{ marginBottom: 12 }}>
           {booking.status === 'CONFIRMED' ? (
             <span className="tag tag-accent">Paid{paid?.method ? ` · ${methodLabel(paid.method)}` : ''}</span>
+          ) : holdLive ? (
+            <span className="tag tag-outline">Not paid yet</span>
           ) : (
-            <span className="tag tag-outline">Awaiting payment</span>
+            // A hold that lapsed is not "awaiting" anything: the court went
+            // back on sale, and saying otherwise leaves somebody expecting a
+            // court that is not theirs.
+            <span className="tag tag-neutral">Payment never completed</span>
           )}
           <span className="tag tag-neutral mono">{booking.ref}</span>
           {!isPast && booking.status === 'CONFIRMED' && (
@@ -57,6 +64,9 @@ export default async function MyBookingsPage() {
               <a className="btn btn-ghost" href={qrImagePath(makePassToken(booking))} download>
                 Save QR
               </a>
+              <Link className="btn btn-ghost" href={`/pass/${encodeURIComponent(makePassToken(booking))}#players`}>
+                Invite players
+              </Link>
             </>
           )}
         </div>
@@ -70,6 +80,24 @@ export default async function MyBookingsPage() {
           {formatPeso(booking.totalCents)} · {booking.players.length}{' '}
           {booking.players.length === 1 ? 'player' : 'players'} registered
         </div>
+        {booking.status !== 'CONFIRMED' && !isPast && (
+          <div className="row" style={{ marginTop: 12 }}>
+            {holdLive ? (
+              <>
+                <span className="muted" style={{ fontSize: 13 }}>
+                  Payment was not finished, so this court is still on sale.
+                </span>
+                <Link className="btn btn-secondary" href="/book">
+                  Book it again
+                </Link>
+              </>
+            ) : (
+              <span className="muted" style={{ fontSize: 13 }}>
+                The hold lapsed before payment cleared and the court went back on sale.
+              </span>
+            )}
+          </div>
+        )}
       </div>
     );
   };
@@ -112,9 +140,9 @@ export default async function MyBookingsPage() {
         )}
 
         <section style={{ marginBottom: 34 }}>
-          <h4 style={{ marginBottom: 4 }}>Add an earlier booking</h4>
+          <h4 style={{ marginBottom: 4 }}>Add a booking made elsewhere</h4>
           <p className="muted" style={{ fontSize: 13, marginBottom: 16 }}>
-            Booked as a guest before signing up? Add it here.
+            Booked at the desk, or before you had an account? Add it here with its reference.
           </p>
           <div style={{ background: 'var(--color-surface)', borderRadius: 14, padding: 20, boxShadow: 'var(--shadow-sm)' }}>
             <ClaimBooking />

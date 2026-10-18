@@ -64,7 +64,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       <main className="container fade-in" style={{ padding: '32px 24px 64px', maxWidth: 900 }}>
         <div className="row" style={{ marginBottom: 18 }}>
           <Link className="btn btn-ghost" href="/admin/schedule">
-            ← The week
+            ← Schedule
           </Link>
           <Link className="btn btn-ghost" href="/desk/bookings">
             All bookings

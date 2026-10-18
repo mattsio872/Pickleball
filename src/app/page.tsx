@@ -21,7 +21,11 @@ const STEPS = [
   { n: 1, title: 'Pick court and time', body: 'Live availability across every court, in 1 to 3 hour blocks.' },
   { n: 2, title: 'Pay online', body: 'GCash, Maya, online bank transfer or card. The slot locks the moment payment clears.' },
   { n: 3, title: 'Share the join link', body: 'Your players register themselves — names land on the desk roster.' },
-  { n: 4, title: 'Scan in', body: 'One scan at the front desk verifies the booking, the court and that it is paid.' },
+  {
+    n: 4,
+    title: 'Scan in',
+    body: 'Your QR admits the party; each player gets one of their own, so nobody waits at the door.',
+  },
 ];
 
 export default async function HomePage() {
@@ -45,15 +49,15 @@ export default async function HomePage() {
     },
     {
       q: 'What if a player arrives without registering?',
-      a: `The desk can add them against your reference on the spot, as long as your pass has been scanned and you are within the ${settings.maxPlayers}-player limit.`,
+      a: 'The desk can add them to your roster on the spot against your reference. The rate covers the court, not the heads, so a late swap costs nothing.',
     },
     {
       q: 'What if we cannot make our slot?',
       a: 'Court time is booked and paid for the slot you chose, and is not refundable. Message the desk as early as you can and we will do what we can to help.',
     },
     {
-      q: 'Is one QR enough for the whole group?',
-      a: "Yes. The booker's QR carries the reference; the court, slot, payment status and roster open from it on the desk's screen.",
+      q: 'Do we all have to arrive together?',
+      a: 'No. Your QR admits the whole party, and every player who registers on your join link also gets a QR of their own — so whoever gets there first can be let in without waiting for you.',
     },
   ];
 
@@ -267,7 +271,7 @@ export default async function HomePage() {
           >
             <h2 style={{ marginBottom: 10 }}>Courts open tomorrow at {opens.replace(':00', '')}.</h2>
             <p style={{ color: 'var(--color-neutral-700)', fontSize: 15, maxWidth: '48ch' }}>
-              Pick a slot, pay online, share the join link with your group. Everyone checks in with one scan.
+              Pick a slot, pay online, share the join link with your group. Everyone scans themselves in.
             </p>
             <Link className="btn btn-primary" style={{ padding: '11px 20px', fontSize: 15 }} href="/book">
               Book a court

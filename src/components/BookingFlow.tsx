@@ -83,29 +83,36 @@ function dayChipLabels(dayKey: string, timezone: string, isToday: boolean) {
 export function BookingFlow({
   cancelledRef,
   account,
+  initial,
 }: {
   cancelledRef?: string;
   /**
-   * The signed-in booker. Booking requires an account, so this is always
-   * present — the pass goes to this address, and the name and number here are
-   * what the account has saved.
+   * The signed-in booker, or null for somebody still browsing.
+   *
+   * Booking needs an account, but *looking* does not: a venue that demands a
+   * password before it will show a single free hour has lost the customer who
+   * only wanted to know whether Thursday at seven was free. The account is
+   * asked for at the point it is actually needed — the payment step — and the
+   * API refuses a hold without one regardless.
    */
-  account: { name: string; email: string; mobile: string };
+  account: { name: string; email: string; mobile: string } | null;
+  /** A slot picked before signing in, handed back afterwards. */
+  initial?: { dayKey?: string; courtId?: string; startMinutes?: number; durationMinutes?: number };
 }) {
   const router = useRouter();
 
   const [step, setStep] = useState<'slot' | 'pay'>('slot');
-  const [dayKey, setDayKey] = useState<string | null>(null);
-  const [duration, setDuration] = useState<number | null>(null);
-  const [courtId, setCourtId] = useState<string | null>(null);
-  const [startMinutes, setStartMinutes] = useState<number | null>(null);
+  const [dayKey, setDayKey] = useState<string | null>(initial?.dayKey ?? null);
+  const [duration, setDuration] = useState<number | null>(initial?.durationMinutes ?? null);
+  const [courtId, setCourtId] = useState<string | null>(initial?.courtId ?? null);
+  const [startMinutes, setStartMinutes] = useState<number | null>(initial?.startMinutes ?? null);
 
   const [data, setData] = useState<Availability | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const [name, setName] = useState(account.name);
-  const [mobile, setMobile] = useState(account.mobile);
+  const [name, setName] = useState(account?.name ?? '');
+  const [mobile, setMobile] = useState(account?.mobile ?? '');
   const [method, setMethod] = useState<MethodId>('gcash');
 
   const [submitting, setSubmitting] = useState(false);
@@ -148,7 +155,7 @@ export function BookingFlow({
   );
 
   useEffect(() => {
-    void load(null, null);
+    void load(initial?.dayKey ?? null, initial?.durationMinutes ?? null, { keepSelection: true });
     // Deliberately once on mount; subsequent loads are driven by the pickers.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -173,6 +180,30 @@ export function BookingFlow({
     return `${h12}:${String(min).padStart(2, '0')} ${suffix}`;
   }, [startMinutes, duration]);
 
+  /** Other courts with room on the chosen day, so a full court is not a wall. */
+  const freeElsewhere = useMemo(
+    () =>
+      (data?.courts ?? [])
+        .filter((c) => c.id !== court?.id)
+        .map((c) => ({ id: c.id, code: c.code, free: c.slots.filter((s) => s.available).length }))
+        .filter((c) => c.free > 0),
+    [data, court],
+  );
+
+  /** What the dimming actually means today, rather than a blanket claim. */
+  const dimmedNote = useMemo(() => {
+    const reasons = new Set((court?.slots ?? []).filter((s) => !s.available).map((s) => s.reason));
+    if (reasons.size === 0) return 'Every time below is free';
+    if (reasons.size === 1) {
+      const only = [...reasons][0];
+      if (only === 'booked') return 'Dimmed times are already booked';
+      if (only === 'past') return 'Dimmed times have already passed';
+      if (only === 'closed') return 'Dimmed times are closed for maintenance';
+      if (only === 'after-hours') return 'Dimmed times would run past closing';
+    }
+    return 'Dimmed times are unavailable — hover one for why';
+  }, [court]);
+
   const dateLine = useMemo(() => {
     if (!dayKey || !settings) return '—';
     const [y, m, d] = dayKey.split('-').map(Number);
@@ -183,6 +214,46 @@ export function BookingFlow({
       timeZone: settings.timezone,
     });
   }, [dayKey, settings]);
+
+  /**
+   * Where sign-in should return to: this page, with the slot already chosen.
+   * Without it, signing in costs the customer the four choices they just made.
+   */
+  const resumeHref = useMemo(() => {
+    const params = new URLSearchParams();
+    if (dayKey) params.set('date', dayKey);
+    if (court) params.set('court', court.id);
+    if (startMinutes !== null) params.set('start', String(startMinutes));
+    if (duration) params.set('duration', String(duration));
+    const query = params.toString();
+    return query ? `/book?${query}` : '/book';
+  }, [dayKey, court, startMinutes, duration]);
+
+  /** "today" / "on Tue 20" — so a message about a full day names the day. */
+  const dayWord = useMemo(() => {
+    if (!dayKey || !data?.days?.length) return 'that day';
+    return dayKey === data.days[0] ? 'today' : `on ${dateLine}`;
+  }, [dayKey, data, dateLine]);
+
+  /** What to say when the chosen court offers nothing on the chosen day. */
+  const emptyDayMessage = useMemo(() => {
+    const reasons = new Set((court?.slots ?? []).filter((s) => !s.available).map((s) => s.reason));
+    const onlyPast = reasons.size === 1 && reasons.has('past');
+    const onlyClosed = reasons.size === 1 && reasons.has('closed');
+
+    if (onlyPast) {
+      return "Today's court hours have all started. Pick another day:";
+    }
+    if (onlyClosed) {
+      return freeElsewhere.length > 0
+        ? `Court ${court?.code} is closed ${dayWord}. Another court is open:`
+        : `Every court is closed ${dayWord}. Try another date:`;
+    }
+    if (freeElsewhere.length > 0) {
+      return `Court ${court?.code} is fully booked ${dayWord}. Another court has time:`;
+    }
+    return `Every court is taken ${dayWord}. Try another date:`;
+  }, [court, freeElsewhere, dayWord]);
 
   async function handlePay() {
     if (!ready || !court || startMinutes === null || !duration || !dayKey) return;
@@ -215,6 +286,13 @@ export function BookingFlow({
       if (error instanceof ApiRequestError) {
         setPayError(error.message);
         if (error.failure.details) setFieldErrors(error.failure.details);
+        if (error.failure.code === 'unauthorized') {
+          // A session that lapsed between picking and paying: send them to
+          // sign in and back to this exact slot, rather than leaving them
+          // pressing a button that will not work again.
+          router.push(`/signin?next=${encodeURIComponent(resumeHref)}`);
+          return;
+        }
         if (error.failure.code === 'slot_taken') {
           // Show the fresh picture and send them back to choose again.
           setStartMinutes(null);
@@ -318,7 +396,7 @@ export function BookingFlow({
               <div className="spread" style={{ marginBottom: 10 }}>
                 <div className="label-caps">Start time</div>
                 <div style={{ fontSize: 11, color: 'var(--color-neutral-700)' }}>
-                  {loading ? 'Checking availability…' : 'Dimmed slots are taken'}
+                  {loading ? 'Checking availability…' : dimmedNote}
                 </div>
               </div>
               <div className="slot-grid" aria-busy={loading}>
@@ -330,15 +408,51 @@ export function BookingFlow({
                     disabled={!s.available}
                     aria-pressed={s.startMinutes === startMinutes}
                     title={s.reason ? REASON_TEXT[s.reason] : undefined}
+                    aria-label={s.reason ? `${s.label} — ${REASON_TEXT[s.reason].toLowerCase()}` : s.label}
                     onClick={() => setStartMinutes(s.startMinutes)}
                   >
                     {s.label}
                   </button>
                 ))}
                 {!loading && court && court.slots.every((s) => !s.available) && (
-                  <p className="muted" style={{ gridColumn: '1 / -1', fontSize: 13, margin: 0 }}>
-                    Nothing free on this court today. Try another court or another date.
-                  </p>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <p className="muted" style={{ fontSize: 13, margin: '0 0 10px' }}>
+                      {emptyDayMessage}
+                    </p>
+                    <div className="chip-grid">
+                      {freeElsewhere.length > 0
+                        ? freeElsewhere.map((c) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              className="chip"
+                              onClick={() => {
+                                setCourtId(c.id);
+                                setStartMinutes(null);
+                              }}
+                            >
+                              Court {c.code} · {c.free} free
+                            </button>
+                          ))
+                        : (data?.days ?? []).slice(1, 4).map((d) => {
+                            const { dow, dom } = dayChipLabels(d, settings?.timezone ?? 'Asia/Manila', false);
+                            return (
+                              <button
+                                key={d}
+                                type="button"
+                                className="chip chip-day"
+                                onClick={() => {
+                                  setStartMinutes(null);
+                                  void load(d, duration, { keepSelection: true });
+                                }}
+                              >
+                                <div className="dow">{dow}</div>
+                                <div className="dom">{dom}</div>
+                              </button>
+                            );
+                          })}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -394,14 +508,32 @@ export function BookingFlow({
               <span style={{ fontSize: 13, color: 'var(--color-neutral-600)' }}>Total due</span>
               <span style={{ fontFamily: 'var(--font-heading)', fontSize: 26 }}>{formatPesoClient(totalCents)}</span>
             </div>
-            <button
-              className="btn btn-primary btn-block"
-              style={{ padding: 11 }}
-              disabled={!ready}
-              onClick={() => setStep('pay')}
-            >
-              Continue to payment
-            </button>
+            {account ? (
+              <button
+                className="btn btn-primary btn-block"
+                style={{ padding: 11 }}
+                disabled={!ready}
+                onClick={() => setStep('pay')}
+              >
+                Continue to payment
+              </button>
+            ) : (
+              <>
+                <button
+                  className="btn btn-primary btn-block"
+                  style={{ padding: 11 }}
+                  disabled={!ready}
+                  onClick={() => router.push(`/signin?next=${encodeURIComponent(resumeHref)}`)}
+                >
+                  Sign in to book this slot
+                </button>
+                <p className="muted" style={{ fontSize: 12, textAlign: 'center', margin: '10px 0 0' }}>
+                  {ready
+                    ? 'Your slot is still free for anyone until it is paid for — signing in brings you straight back to it.'
+                    : 'Browse freely; an account is only needed to pay.'}
+                </p>
+              </>
+            )}
             <button className="btn btn-ghost btn-block" style={{ padding: 8 }} onClick={() => router.push('/')}>
               Back to site
             </button>
@@ -479,9 +611,9 @@ export function BookingFlow({
                 {/* Fixed to the account: the pass and the booking history have
                     to end up in the same place, and a typo here would put them
                     somewhere nobody can reach. */}
-                <input id="bk-email" className="input" value={account.email} type="email" readOnly disabled />
+                <input id="bk-email" className="input" value={account?.email ?? ''} type="email" readOnly disabled />
                 <div className="muted" style={{ fontSize: 11.5, marginTop: 5 }}>
-                  Your account&rsquo;s address. Change it in your account settings.
+                  Your account&rsquo;s address. Message the desk if it needs changing.
                 </div>
               </div>
             </div>

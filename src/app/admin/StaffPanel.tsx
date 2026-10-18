@@ -22,12 +22,26 @@ function Notice({ state }: { state: { kind: 'ok' | 'error'; message: string } | 
   );
 }
 
-function formatWhen(value: string | null): string {
+/** As the venue reckons the date — see CustomersPanel for why the zone matters. */
+function formatWhen(value: string | null, timezone: string): string {
   if (!value) return 'never';
-  return new Date(value).toLocaleDateString('en-PH', { day: 'numeric', month: 'short', year: 'numeric' });
+  return new Date(value).toLocaleDateString('en-PH', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: timezone,
+  });
 }
 
-export function StaffPanel({ initial, currentUserId }: { initial: Staff[]; currentUserId: string }) {
+export function StaffPanel({
+  initial,
+  currentUserId,
+  timezone,
+}: {
+  initial: Staff[];
+  currentUserId: string;
+  timezone: string;
+}) {
   const router = useRouter();
   const [staff, setStaff] = useState(initial);
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; message: string } | null>(null);
@@ -111,7 +125,7 @@ export function StaffPanel({ initial, currentUserId }: { initial: Staff[]; curre
                     </select>
                   </td>
                   <td className="muted" style={{ fontSize: 13 }}>
-                    {formatWhen(person.lastLoginAt)}
+                    {formatWhen(person.lastLoginAt, timezone)}
                   </td>
                   <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <button

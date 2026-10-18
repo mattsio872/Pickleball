@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { api, ApiRequestError, formatPesoClient } from '@/lib/client';
 
@@ -117,9 +118,12 @@ export function BookingsManager({ isAdmin, initialSearch = '' }: { isAdmin: bool
           id="bk-search"
           className="input"
           value={search}
-          placeholder="Reference, name, email or mobile — blank for what is still ahead"
+          placeholder="PL-K7Q2M9, a name, email or mobile"
           onChange={(e) => setSearch(e.target.value)}
         />
+        <p className="muted" style={{ fontSize: 12, marginTop: 5 }}>
+          Leave it blank to list everything still ahead of now.
+        </p>
       </div>
 
       <p className="muted" style={{ fontSize: 13, marginBottom: 16 }}>
@@ -149,7 +153,15 @@ export function BookingsManager({ isAdmin, initialSearch = '' }: { isAdmin: bool
               }}
             >
               <div className="row" style={{ marginBottom: 10 }}>
-                <span className="tag tag-neutral mono">{booking.ref}</span>
+                {/* The whole booking — roster, payments, pass — is a click away;
+                    before this, only the week grid knew that page existed. */}
+                <Link
+                  className="tag tag-neutral mono"
+                  href={`/desk/bookings/${encodeURIComponent(booking.ref)}`}
+                  title="Open this booking in full"
+                >
+                  {booking.ref}
+                </Link>
                 {booking.status === 'CONFIRMED' && <span className="tag tag-accent">Paid</span>}
                 {booking.status === 'HELD' && <span className="tag tag-outline">Unpaid hold</span>}
                 {booking.status === 'CANCELLED' && <span className="tag tag-outline">Released</span>}
@@ -170,6 +182,9 @@ export function BookingsManager({ isAdmin, initialSearch = '' }: { isAdmin: bool
               </div>
 
               <div className="row" style={{ marginTop: 14 }}>
+                <Link className="btn btn-secondary" href={`/desk/bookings/${encodeURIComponent(booking.ref)}`}>
+                  Open
+                </Link>
                 {live && (
                   <button
                     className="btn btn-secondary"

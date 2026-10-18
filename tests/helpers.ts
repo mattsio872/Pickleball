@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process';
 import { prisma } from '@/lib/db';
+import { dayKeyOf, shiftDayKey, venueInstant } from '@/lib/time';
 
 let migrated = false;
 
@@ -47,6 +48,23 @@ export async function seedVenue(
   return { settings, courts };
 }
 
-/** A fixed "now" well before the test slots, so nothing is accidentally in the past. */
-export const NOW = new Date('2026-09-10T02:00:00.000Z'); // 10AM Manila
-export const TEST_DAY = '2026-09-11';
+const MANILA = 'Asia/Manila';
+
+/**
+ * The clock the fixtures run on.
+ *
+ * These were fixed dates in September 2026, which worked until September 2026
+ * went past: a hold created "then" is expired now, and eleven tests started
+ * failing on their own, having been written correctly and never touched. The
+ * dates are relative instead, keeping the same two properties the fixed ones
+ * had — a "now" that is ahead of the real clock, so a hold made at it is live
+ * whichever clock the code under test consults, and a test day entirely after
+ * that, so every venue hour on it is bookable.
+ */
+export const NOW = venueInstant(shiftDayKey(dayKeyOf(new Date(), MANILA), 1, MANILA), 10 * 60, MANILA);
+export const TEST_DAY = shiftDayKey(dayKeyOf(new Date(), MANILA), 2, MANILA);
+
+/** An instant on the test day, venue-local — for asserting on exact times. */
+export function testDayAt(hour: number, minutes = 0): Date {
+  return venueInstant(TEST_DAY, hour * 60 + minutes, MANILA);
+}

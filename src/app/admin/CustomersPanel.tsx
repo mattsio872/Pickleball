@@ -24,18 +24,38 @@ type HistoryRow = {
   players: number;
 };
 
-function shortDate(value: string): string {
-  return new Date(value).toLocaleDateString('en-PH', { day: 'numeric', month: 'short', year: 'numeric' });
+/**
+ * Dates as the venue reckons them.
+ *
+ * Without the timezone this formatted in the *browser's* zone, so a 6AM Manila
+ * booking read as the previous day on any staff laptop set to UTC — the kind of
+ * error nobody notices until somebody is told the wrong day.
+ */
+function shortDate(value: string, timezone: string): string {
+  return new Date(value).toLocaleDateString('en-PH', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: timezone,
+  });
 }
 
 /**
  * Everyone who has booked, grouped by the email they booked with.
  *
- * There are no customer logins, so this is a read-only directory built from
- * bookings — the venue's answer to "who is this person and what have they
- * booked before" when somebody rings the desk.
+ * Built from bookings rather than from accounts, so it covers people the desk
+ * booked in as well as people who booked themselves — the venue's answer to
+ * "who is this and what have they booked before" when somebody rings up.
  */
-export function CustomersPanel({ initial, initialTotal }: { initial: Customer[]; initialTotal: number }) {
+export function CustomersPanel({
+  initial,
+  initialTotal,
+  timezone,
+}: {
+  initial: Customer[];
+  initialTotal: number;
+  timezone: string;
+}) {
   const [customers, setCustomers] = useState(initial);
   const [total, setTotal] = useState(initialTotal);
   const [search, setSearch] = useState('');
@@ -136,12 +156,12 @@ export function CustomersPanel({ initial, initialTotal }: { initial: Customer[];
                       {c.confirmedBookings} confirmed
                       <br />
                       <span className="muted" style={{ fontSize: 12 }}>
-                        since {shortDate(c.firstBookedAt)}
+                        since {shortDate(c.firstBookedAt, timezone)}
                       </span>
                     </td>
                     <td style={{ fontSize: 13 }}>
                       {c.upcomingAt ? (
-                        <span className="tag tag-accent">{shortDate(c.upcomingAt)}</span>
+                        <span className="tag tag-accent">{shortDate(c.upcomingAt, timezone)}</span>
                       ) : (
                         <span className="muted">—</span>
                       )}

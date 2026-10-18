@@ -46,7 +46,7 @@ password. This is the same product with those four things actually built.
 - See upcoming bookings, the last 24 hours of activity, and revenue booked
 - Add and remove staff accounts, change their role, reset a forgotten password
 - Browse everyone who has booked, with their history, contact details and spend
-- See the whole week as a grid at `/admin/schedule` — every court, every hour
+- See the whole week as a grid under **Schedule** — every court, every hour
 - Delete a booking outright (admins only)
 - Paste a photo URL per court and for the hero; the generated artwork shows
   wherever one is blank
@@ -93,6 +93,10 @@ npm test          # the full suite, against the test database
 npm run typecheck
 npm run build
 ```
+
+`TEST_DATABASE_URL` must name a **different database** from `DATABASE_URL`: the
+tests truncate every table they touch, and the suite refuses to start if the two
+match rather than emptying the database you are working in.
 
 ---
 
@@ -374,7 +378,7 @@ src/
     desk/                    Staff scanner (camera + reference lookup)
     desk/bookings/           Move, release and delete bookings
     desk/bookings/[ref]/     One booking in full, opened from the week grid
-    admin/                   Owner dashboard
+    admin/                   Venue settings (rates, courts, closures, staff)
     admin/schedule/          The week as a grid
     api/                     Route handlers
   components/
@@ -398,7 +402,7 @@ used to fix a password.
 
 **Normally, in the browser.** Sign in and open **Your account** (`/account`) to
 change your own password — this works for admins and front desk alike, and
-needs your current password. An admin can reset somebody else's from **Admin →
+needs your current password. An admin can reset somebody else's from **Venue settings →
 Staff accounts**, which does not.
 
 **From the command line**, when nobody can sign in at all:
@@ -495,12 +499,20 @@ shorter block does change what is owed, and the screen says by how much.
 
 ## Customer accounts
 
-Booking a court requires an account. The gate is on the API, not only on the
-page: every booking made through the site belongs to somebody who can find it
-again, the pass goes to an address the account owns, and the name and number
-typed at booking are saved back to the account for next time. Bookings taken at
-the desk are unaffected, and bookings made before accounts existed are claimed
-onto one by reference.
+Booking a court requires an account; *looking* does not. Anyone can open
+`/book`, see live availability across every court and read the price — the
+account is asked for at the payment step, and the slot they picked survives
+sign-in through the query string, so nobody chooses twice. The gate itself is on
+the API rather than the page: a hold without a session is refused with a 401
+whatever the browser does. Every booking made through the site therefore belongs
+to somebody who can find it again, the pass goes to an address the account owns,
+and the name and number typed at booking are saved back to the account for next
+time. Bookings taken at the desk are unaffected, and bookings made before
+accounts existed are claimed onto one by reference.
+
+There is no self-service password reset — that would need email delivery this
+site cannot assume — so the sign-in page says what to do instead: message the
+desk, and note that the pass link and its QR keep working regardless.
 
 Three decisions worth knowing about:
 
@@ -518,7 +530,7 @@ Three decisions worth knowing about:
 ## Court and hero photographs
 
 There is no image upload. Each court has an `imageUrl`, and the venue has a
-`heroImageUrl`, both editable in **Admin → Courts / Venue settings**. Paste any
+`heroImageUrl`, both editable in **Venue settings → Courts**. Paste any
 public image URL — a CDN, an object store, wherever the venue keeps its
 photographs — and it appears immediately.
 

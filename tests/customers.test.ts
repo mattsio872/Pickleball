@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { prisma } from '@/lib/db';
 import { createHold, confirmBooking } from '@/lib/booking';
 import { customerHistory, listCustomers, saveBookingDetails } from '@/lib/customers';
-import { migrateTestDatabase, resetDatabase, seedVenue, NOW, TEST_DAY } from './helpers';
+import { migrateTestDatabase, resetDatabase, seedVenue, testDayAt, NOW, TEST_DAY } from './helpers';
 
 let courtA: string;
 let courtB: string;
@@ -93,7 +93,7 @@ describe('customer directory', () => {
 
     const { customers } = await listCustomers();
     // 6PM comes before 8PM.
-    expect(customers[0].upcomingAt).toBe('2026-09-11T10:00:00.000Z');
+    expect(customers[0].upcomingAt).toBe(testDayAt(18).toISOString());
   });
 
   it('ignores an unconfirmed booking when reporting what is upcoming', async () => {

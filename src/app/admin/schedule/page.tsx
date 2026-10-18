@@ -38,10 +38,13 @@ export default async function SchedulePage({
 
       <main className="container fade-in" style={{ padding: '32px 24px 64px' }}>
         <div className="row" style={{ alignItems: 'baseline', marginBottom: 6 }}>
-          <h2 style={{ margin: 0 }}>The week</h2>
+          <h2 style={{ margin: 0 }}>Schedule</h2>
+          <Link className="btn btn-ghost" href="/desk/bookings">
+            Find a booking
+          </Link>
           {session.role === 'ADMIN' && (
             <Link className="btn btn-ghost" href="/admin">
-              Admin dashboard
+              Venue settings
             </Link>
           )}
         </div>
@@ -138,6 +141,13 @@ export default async function SchedulePage({
             </tbody>
           </table>
         </div>
+
+        {schedule.totals.bookings === 0 && (
+          <p className="muted" style={{ fontSize: 13.5, marginTop: 16 }}>
+            Nothing booked this week yet. Use <strong>Next →</strong> to look ahead — bookings appear here the moment
+            payment clears.
+          </p>
+        )}
 
         <p className="muted" style={{ fontSize: 12.5, marginTop: 16 }}>
           Hover a chip for the reference, booker and party size; click one to open the booking in full — who booked it,

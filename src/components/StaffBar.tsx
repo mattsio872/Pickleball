@@ -1,15 +1,24 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 /**
  * Header for the staff-only screens.
  *
- * The venue name goes to the public site, as it does on every other page —
- * staff otherwise had no route out of the dashboard at all — and "Front desk"
- * covers the navigation the brand used to do.
+ * Three things were competing here: the brand, a "View site" button and a
+ * "Leave staff view" link at the foot of the page all did the same thing, while
+ * the signed-in person's name sat in the row of sections looking like another
+ * one — "Venue Admin" next to "Admin" being the worst of it. Now there is one
+ * way back to the public site, the sections are named for what they open, and
+ * the account sits apart from them, labelled as a person.
  */
+const SECTIONS = [
+  { href: '/desk', label: 'Front desk', match: (p: string) => p === '/desk' || p.startsWith('/desk/verify') },
+  { href: '/desk/bookings', label: 'Bookings', match: (p: string) => p.startsWith('/desk/bookings') },
+  { href: '/admin/schedule', label: 'Schedule', match: (p: string) => p.startsWith('/admin/schedule') },
+] as const;
+
 export function StaffBar({
   venueName,
   staffName,
@@ -20,20 +29,36 @@ export function StaffBar({
   role: 'STAFF' | 'ADMIN';
 }) {
   const router = useRouter();
+  const pathname = usePathname() ?? '';
 
   return (
     <header className="site-header">
       <div className="inner">
-        <Link href="/" className="brand" title="Back to the public site">
+        <Link href="/desk" className="brand brand-staff" title="Front desk">
           {venueName} <span>· staff</span>
         </Link>
         <nav className="site-nav site-nav-staff">
-          <Link href="/desk">Front desk</Link>
-          <Link href="/desk/bookings">Bookings</Link>
-          <Link href="/admin/schedule">Week</Link>
-          {role === 'ADMIN' && <Link href="/admin">Admin</Link>}
-          <Link href="/account">{staffName}</Link>
-          <Link href="/" className="btn btn-secondary">
+          {SECTIONS.map((section) => (
+            <Link
+              key={section.href}
+              href={section.href}
+              aria-current={section.match(pathname) ? 'page' : undefined}
+            >
+              {section.label}
+            </Link>
+          ))}
+          {role === 'ADMIN' && (
+            <Link href="/admin" aria-current={pathname === '/admin' ? 'page' : undefined}>
+              Venue settings
+            </Link>
+          )}
+
+          <span className="staff-who">
+            <Link href="/account" title="Your account and password">
+              {staffName}
+            </Link>
+          </span>
+          <Link className="btn btn-secondary" href="/" title="Open the customer-facing site">
             View site
           </Link>
           <button

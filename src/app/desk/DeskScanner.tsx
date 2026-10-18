@@ -225,9 +225,9 @@ export function DeskScanner() {
           </form>
         </div>
 
-        <a className="btn btn-ghost" style={{ marginTop: 12 }} href="/">
-          <span aria-hidden="true">←</span> Leave staff view
-        </a>
+        <p className="muted" style={{ fontSize: 12, margin: '12px 2px 0' }}>
+          No camera on this device? The reference above works just as well — it is printed on every pass.
+        </p>
       </div>
 
       <div>
